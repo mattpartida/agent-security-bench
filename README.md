@@ -2,7 +2,7 @@
 
 Dependency-light benchmark suite for evaluating autonomous-agent security behavior.
 
-It provides adversarial cases for prompt injection, data exfiltration, tool misuse, persistence/memory poisoning, and approval bypass. The MVP scores model/agent text responses deterministically and is designed to become a live-agent harness later.
+It provides adversarial cases for prompt injection, data exfiltration, tool misuse, persistence/memory poisoning, approval bypass, canary exfiltration, and unsafe tool use. The default scorer is deterministic text/transcript analysis; live-agent adapters are declared but intentionally sandbox-gated.
 
 ## Why
 
@@ -13,6 +13,7 @@ Agent security failures are behavioral. A config can look reasonable while the a
 - uses tools without approval
 - stores attacker policy in memory
 - bypasses outbound-action gates
+- exfiltrates canary files or fake secrets through tool calls
 
 This repo gives those risks repeatable benchmark cases.
 
@@ -23,6 +24,7 @@ Run without installing:
 ```bash
 PYTHONPATH=src python -m agent_security_bench.cli list --format json
 PYTHONPATH=src python -m agent_security_bench.cli score examples/safe-responses.json --format json
+PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format markdown
 ```
 
 Install locally:
@@ -30,7 +32,7 @@ Install locally:
 ```bash
 python -m pip install -e .
 agent-security-bench list --format json
-agent-security-bench score examples/safe-responses.json --format json
+agent-security-bench score examples/safe-responses.json --format sarif > agent-security-bench.sarif
 ```
 
 ## Built-in categories
@@ -38,45 +40,103 @@ agent-security-bench score examples/safe-responses.json --format json
 - `direct_prompt_injection`
 - `indirect_prompt_injection`
 - `data_exfiltration`
+- `canary_exfiltration`
 - `tool_misuse`
 - `persistence`
 - `approval_bypass`
+
+## Case files
+
+Built-in cases are always available, and additional cases can be loaded from JSON, JSONL, or a dependency-free YAML subset:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli list --cases examples/custom-cases.jsonl --format json
+PYTHONPATH=src python -m agent_security_bench.cli score responses.json --cases examples/custom-cases.yaml
+```
+
+Each case has a stable `id`, `category`, `severity`, `difficulty`, `benchmark_version`, required safe-response patterns, and forbidden unsafe patterns.
 
 ## Output
 
 The score report includes:
 
+- `schema_version` and `benchmark_version`
 - aggregate summary
 - score from `0.0` to `1.0`
 - per-category results
+- per-difficulty results
 - per-case pass/fail
 - violations with required/forbidden pattern IDs
 
-## Example
+Supported report formats:
 
 ```bash
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format json
+PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format markdown
+PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format sarif
 ```
+
+## Tool-call transcript scoring
+
+Use `--transcripts` when inputs are `case_id -> transcript` objects with `response` and `tool_calls` fields. Transcript scoring flags unsafe tool calls, canary exfiltration, and fake-secret exfiltration in addition to text response violations.
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli score examples/tool-transcripts.json --transcripts --format json
+```
+
+## Live-agent adapters
+
+List declared adapters:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli adapters --format json
+```
+
+The `dry-run` adapter is CI-safe and deterministic. Hermes, OpenClaw, Codex, and Claude adapter specs are present as sandbox-gated placeholders; real execution should only be wired in isolated environments with fake secrets, canary files, and no real outbound credentials.
+
+## Regression mode
+
+Compare a current run to a baseline and fail if score or pass count regresses:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli regression current-report.json \
+  --baseline baseline-report.json \
+  --fail-on-regression
+```
+
+`score` can also attach a regression comparison directly:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli score responses.json \
+  --baseline baseline-report.json \
+  --fail-on-regression
+```
+
+## Safety fixtures
+
+`examples/canary-fixtures.json` contains fake canary files, fake secrets, and attacker endpoints used for transcript/canary tests. These values are intentionally inert and must never be replaced with real credentials.
 
 ## Development
 
 ```bash
 PYTHONPATH=src python -m unittest discover -s tests -q
+PYTHONPATH=src python -m pytest -q
 python -m compileall -q src tests
+ruff check .
 ```
 
 CI runs `ruff`, `compileall`, and `pytest`.
 
-## Roadmap
+## Roadmap status
 
-- YAML/JSONL case files
-- Live-agent adapters for Hermes/OpenClaw/Codex/Claude
-- Tool-call transcript scoring
-- Sandboxed canary file and fake secret fixtures
-- SARIF/Markdown reports
-- Difficulty tiers and benchmark versioning
-- Larger prompt-injection corpus
-- Regression mode for agent releases
+- YAML/JSONL case files — Shipped
+- Live-agent adapters for Hermes/OpenClaw/Codex/Claude — Shipped as sandbox-gated adapter specs plus CI-safe dry-run execution
+- Tool-call transcript scoring — Shipped
+- Sandboxed canary file and fake secret fixtures — Shipped
+- SARIF/Markdown reports — Shipped
+- Difficulty tiers and benchmark versioning — Shipped
+- Larger prompt-injection corpus — Shipped
+- Regression mode for agent releases — Shipped
 
 ## Safety note
 

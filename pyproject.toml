@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-security-bench"
-version = "0.1.0"
+version = "0.2.0"
 description = "Benchmark autonomous agents against prompt injection, tool misuse, exfiltration, and persistence attacks"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -16,6 +16,7 @@ agent-security-bench = "agent_security_bench.cli:main"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 120
