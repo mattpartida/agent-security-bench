@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .adapters import dry_run_responses, list_adapters
 from .cases import built_in_cases, load_cases
-from .reports import render_markdown, render_sarif
+from .reports import render_junit, render_markdown, render_sarif
 from .runner import compare_to_baseline, run_benchmark
 
 
@@ -26,7 +26,30 @@ def _render_report(report, fmt):
         return render_markdown(report) + "\n"
     if fmt == "sarif":
         return _json(render_sarif(report))
+    if fmt == "junit":
+        return render_junit(report) + "\n"
     return _json(report)
+
+
+def _apply_thresholds(report, *, min_score=None, fail_on_failures=False):
+    """Attach threshold metadata and return whether the report failed policy."""
+
+    threshold = {"failed": False}
+    if min_score is not None:
+        current_score = float(report.get("summary", {}).get("score", 0.0))
+        threshold["min_score"] = float(min_score)
+        threshold["score"] = current_score
+        if current_score < float(min_score):
+            threshold["failed"] = True
+    if fail_on_failures:
+        failed_cases = int(report.get("summary", {}).get("failed", 0))
+        threshold["fail_on_failures"] = True
+        threshold["failed_cases"] = failed_cases
+        if failed_cases > 0:
+            threshold["failed"] = True
+    if len(threshold) > 1:
+        report["thresholds"] = threshold
+    return bool(threshold["failed"])
 
 
 def run(argv=None):
@@ -41,9 +64,11 @@ def run(argv=None):
     score_parser.add_argument("responses", help="Path to responses JSON")
     score_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
     score_parser.add_argument("--transcripts", action="store_true", help="treat responses as case_id -> transcript objects")
-    score_parser.add_argument("--format", choices=["json", "markdown", "sarif"], default="json")
+    score_parser.add_argument("--format", choices=["json", "markdown", "sarif", "junit"], default="json")
     score_parser.add_argument("--baseline", help="Optional baseline report for regression comparison")
     score_parser.add_argument("--fail-on-regression", action="store_true", help="exit non-zero if current score regresses from baseline")
+    score_parser.add_argument("--min-score", type=float, help="exit non-zero if the benchmark score is below this value")
+    score_parser.add_argument("--fail-on-failures", action="store_true", help="exit non-zero if any benchmark case fails")
 
     adapters_parser = subparsers.add_parser("adapters", help="List live-agent adapter specs")
     adapters_parser.add_argument("--format", choices=["json"], default="json")
@@ -89,15 +114,16 @@ def run(argv=None):
         if not isinstance(responses, dict):
             return 2, _json({"schema_version": "0.2", "errors": [{"path": args.responses, "message": "responses JSON must be an object"}]})
         report = run_benchmark(responses, cases, transcript_mode=args.transcripts)
+        regression_failed = False
         if args.baseline:
             try:
                 baseline = _load_json(args.baseline)
             except (OSError, json.JSONDecodeError) as exc:
                 return 2, _json({"schema_version": "0.2", "errors": [{"path": args.baseline, "message": str(exc)}]})
             report["regression"] = compare_to_baseline(report, baseline)
-            if args.fail_on_regression and report["regression"]["regressed"]:
-                return 1, _render_report(report, args.format)
-        return 0, _render_report(report, args.format)
+            regression_failed = bool(args.fail_on_regression and report["regression"]["regressed"])
+        threshold_failed = _apply_thresholds(report, min_score=args.min_score, fail_on_failures=args.fail_on_failures)
+        return (1 if regression_failed or threshold_failed else 0), _render_report(report, args.format)
 
     if args.command == "regression":
         try:

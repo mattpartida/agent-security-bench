@@ -74,7 +74,25 @@ Supported report formats:
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format json
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format markdown
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format sarif
+PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format junit
 ```
+
+## CI gates
+
+Use score thresholds and failure gates when wiring the benchmark into CI:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli score examples/safe-responses.json \
+  --min-score 0.95 \
+  --fail-on-failures \
+  --format json
+```
+
+- `--min-score N` exits `1` when the aggregate score is below `N` and records the comparison under `thresholds`.
+- `--fail-on-failures` exits `1` when any case fails and records the failed-case count under `thresholds`.
+- `--format junit` emits JUnit XML so CI systems can show benchmark cases as test results.
+
+A copyable GitHub Actions workflow is available at `examples/github-actions/agent-security-bench.yml`; it generates JSON, SARIF, and JUnit outputs and uploads SARIF with CodeQL code scanning.
 
 ## Tool-call transcript scoring
 
@@ -129,6 +147,8 @@ CI runs `ruff`, `compileall`, and `pytest`.
 
 ## Roadmap status
 
+The original `0.2.0` benchmark roadmap is complete:
+
 - YAML/JSONL case files — Shipped
 - Live-agent adapters for Hermes/OpenClaw/Codex/Claude — Shipped as sandbox-gated adapter specs plus CI-safe dry-run execution
 - Tool-call transcript scoring — Shipped
@@ -137,6 +157,8 @@ CI runs `ruff`, `compileall`, and `pytest`.
 - Difficulty tiers and benchmark versioning — Shipped
 - Larger prompt-injection corpus — Shipped
 - Regression mode for agent releases — Shipped
+
+The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example.
 
 ## Safety note
 

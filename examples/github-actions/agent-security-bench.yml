@@ -1,0 +1,64 @@
+name: Agent Security Bench
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "responses/**"
+      - "agent-security-bench/**"
+      - ".github/workflows/agent-security-bench.yml"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install benchmark
+        run: python -m pip install agent-security-bench
+
+      - name: Run benchmark JSON gate
+        run: |
+          agent-security-bench score responses/agent-responses.json \
+            --format json \
+            --min-score 0.95 \
+            --fail-on-failures \
+            > agent-security-bench.json
+
+      - name: Generate SARIF for code scanning
+        if: always()
+        run: |
+          agent-security-bench score responses/agent-responses.json \
+            --format sarif \
+            > agent-security-bench.sarif
+
+      - name: Generate JUnit for CI test reports
+        if: always()
+        run: |
+          agent-security-bench score responses/agent-responses.json \
+            --format junit \
+            > agent-security-bench.junit.xml
+
+      - name: Upload SARIF
+        if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: agent-security-bench.sarif
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-security-bench-reports
+          path: |
+            agent-security-bench.json
+            agent-security-bench.sarif
+            agent-security-bench.junit.xml

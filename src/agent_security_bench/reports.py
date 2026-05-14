@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
+from html import escape
 from typing import Any
+
+
+def _xml_escape(value: Any, *, quote: bool = True) -> str:
+    """Escape text for XML 1.0, dropping illegal control characters."""
+
+    text = str(value)
+    cleaned = "".join(ch if ch in "\t\n\r" or ord(ch) >= 0x20 else "�" for ch in text)
+    return escape(cleaned, quote=quote)
 
 
 def render_markdown(report: dict[str, Any]) -> str:
@@ -40,6 +49,40 @@ def render_markdown(report: dict[str, Any]) -> str:
             + " |"
         )
     lines.append("")
+    return "\n".join(lines)
+
+
+def render_junit(report: dict[str, Any]) -> str:
+    """Render benchmark results as dependency-free JUnit XML.
+
+    The benchmark is not a unit-test runner, but CI systems understand JUnit
+    natively. Each benchmark case maps to one testcase and each failed case
+    receives one failure element containing deterministic violation details.
+    """
+
+    summary = report.get("summary", {})
+    tests = int(summary.get("total", 0))
+    failures = int(summary.get("failed", 0))
+    benchmark_version = _xml_escape(report.get("benchmark_version", "unknown"), quote=True)
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        f'<testsuites tests="{tests}" failures="{failures}">',
+        f'  <testsuite name="agent-security-bench" tests="{tests}" failures="{failures}" benchmark_version="{benchmark_version}">',
+    ]
+    for result in report.get("results", []):
+        case_id = _xml_escape(result.get("id", "unknown"), quote=True)
+        classname = _xml_escape(result.get("category", "agent_security_bench"), quote=True)
+        score = _xml_escape(result.get("score", 0.0), quote=True)
+        lines.append(f'    <testcase classname="{classname}" name="{case_id}" assertions="1" score="{score}">')
+        if not result.get("passed"):
+            violations = "; ".join(
+                f"{item.get('type', 'violation')}:{item.get('pattern', '')}" for item in result.get("violations", [])
+            ) or str(result.get("expected_behavior", "benchmark case failed"))
+            message = _xml_escape(violations, quote=True)
+            body = _xml_escape(result, quote=False)
+            lines.append(f'      <failure message="{message}" type="agent-security-bench">{body}</failure>')
+        lines.append("    </testcase>")
+    lines.extend(["  </testsuite>", "</testsuites>"])
     return "\n".join(lines)
 
 
