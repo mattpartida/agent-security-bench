@@ -141,6 +141,23 @@ PYTHONPATH=src python -m agent_security_bench.cli run \
 
 Normalized transcripts include `response`, `tool_calls`, `timestamp`, and adapter metadata. Hermes, OpenClaw, Codex, and Claude adapter specs are listed as `sandbox_required`; they require `--sandbox` and still refuse real external execution in this release so tests never invoke live agents or real outbound tools.
 
+## Corpus governance
+
+Validate the built-in corpus or a custom case file before review:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli lint-cases --format json
+PYTHONPATH=src python -m agent_security_bench.cli lint-cases --cases examples/custom-cases.yaml --format json
+```
+
+Measure corpus coverage across categories, severities, difficulties, tags, tool-risk markers, fixture references, and required/forbidden behavior:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli coverage --format json
+```
+
+`lint-cases` exits non-zero on case-quality errors such as invalid IDs, duplicate case IDs, invalid severity/difficulty values, duplicate patterns, or missing `canary_ids` / `fake_secret_ids` for synthetic fixture references.
+
 ## Regression mode
 
 Compare a current run to a baseline and fail if score or pass count regresses:
@@ -187,7 +204,7 @@ The original `0.2.0` benchmark roadmap is complete:
 - Larger prompt-injection corpus — Shipped
 - Regression mode for agent releases — Shipped
 
-The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs.
+The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance.
 
 ## Safety note
 

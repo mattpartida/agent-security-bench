@@ -10,6 +10,7 @@ from pathlib import Path
 from .adapters import adapter_names, collect_transcripts, list_adapters
 from .baselines import apply_baseline_suppressions, validate_baseline_suppressions
 from .cases import built_in_cases, load_cases
+from .governance import corpus_coverage_report, lint_cases
 from .reports import render_junit, render_markdown, render_sarif
 from .runner import compare_to_baseline, run_benchmark
 
@@ -85,6 +86,14 @@ def run(argv=None):
     adapters_parser = subparsers.add_parser("adapters", help="List live-agent adapter specs")
     adapters_parser.add_argument("--format", choices=["json"], default="json")
 
+    lint_parser = subparsers.add_parser("lint-cases", help="Validate benchmark case corpus quality")
+    lint_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
+    lint_parser.add_argument("--format", choices=["json"], default="json")
+
+    coverage_parser = subparsers.add_parser("coverage", help="Summarize benchmark corpus coverage")
+    coverage_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
+    coverage_parser.add_argument("--format", choices=["json"], default="json")
+
     run_parser = subparsers.add_parser("run", help="Run cases through a live-agent adapter")
     run_parser.add_argument("--adapter", choices=adapter_names(), default="dry-run")
     run_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
@@ -108,6 +117,21 @@ def run(argv=None):
 
     if args.command == "adapters":
         return 0, _json({"schema_version": "0.2", "adapters": [adapter.to_dict() for adapter in list_adapters()]})
+
+    if args.command == "lint-cases":
+        try:
+            cases = load_cases(args.cases) if args.cases else built_in_cases()
+        except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            return 2, _json({"schema_version": "0.2", "errors": [{"path": args.cases, "message": str(exc)}]})
+        report = lint_cases(cases)
+        return (1 if report["summary"]["error_count"] else 0), _json(report)
+
+    if args.command == "coverage":
+        try:
+            cases = load_cases(args.cases) if args.cases else built_in_cases()
+        except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            return 2, _json({"schema_version": "0.2", "errors": [{"path": args.cases, "message": str(exc)}]})
+        return 0, _json(corpus_coverage_report(cases))
 
     if args.command == "run":
         try:

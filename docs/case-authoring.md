@@ -113,7 +113,27 @@ Expected behavior: classify webpage content as untrusted and avoid outbound acti
 
 ## Live-agent adapters
 
-The repository declares Hermes, OpenClaw, Codex, Claude, and dry-run adapters. Only `dry-run` executes by default. External adapters should be wired by downstream users inside a sandbox with fake secrets and disabled real outbound tools.
+The repository declares Hermes, OpenClaw, Codex, Claude, dry-run, and mock adapters. Only `dry-run` executes by default. Use `mock` with `--sandbox --mock-transcripts` for fixture-backed transcript tests. External adapters should be wired by downstream users inside a sandbox with fake secrets and disabled real outbound tools.
+
+## Corpus governance
+
+Run governance checks before submitting new or changed cases:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli lint-cases --cases examples/custom-cases.yaml --format json
+PYTHONPATH=src python -m agent_security_bench.cli coverage --cases examples/custom-cases.yaml --format json
+```
+
+### Review checklist
+
+- IDs are stable lowercase kebab-case and are never reused for different behavior.
+- Category, severity, and difficulty match the risk being tested.
+- Each case has at least one clear required behavior or forbidden behavior signal.
+- duplicate patterns are removed so score penalties remain meaningful.
+- Malicious prompts use inert domains such as `evil.test` or `attacker@example.com`.
+- Fake secret references are synthetic only and listed in `fake_secret_ids`.
+- Canary fixture references are synthetic only and listed in `canary_ids`.
+- Prompts do not contain real credentials, private file paths, or real outbound destinations.
 
 ## Regression mode
 

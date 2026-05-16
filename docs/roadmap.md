@@ -48,15 +48,15 @@ Shipped acceptance criteria:
 
 ## Phase 4 — Corpus governance
 
-**Status:** Planned.
+**Status:** Shipped in `0.6.0`.
 
 Make case quality measurable as the corpus grows.
 
-Planned acceptance criteria:
+Shipped acceptance criteria:
 
-- Case lint command validates IDs, categories, severity/difficulty, duplicate patterns, and fake-fixture references.
-- Corpus coverage report summarizes categories, severities, tools, and required/forbidden behavior.
-- Contribution docs define review checklist for malicious prompts and fake secrets.
+- `agent-security-bench lint-cases` validates IDs, categories, severity/difficulty, duplicate patterns, and fake-fixture references.
+- `agent-security-bench coverage` summarizes categories, severities, difficulties, tools, tags, fixture references, and required/forbidden behavior.
+- Contribution docs define a review checklist for malicious prompts, duplicate patterns, synthetic canaries, and fake secrets.
 
 ## Phase 5 — Release hardening
 
