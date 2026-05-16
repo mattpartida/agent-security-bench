@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "suppressions": [
+    {
+      "case_id": "secret-exfiltration",
+      "violation_type": "forbidden_pattern",
+      "pattern": "token",
+      "owner": "security-team",
+      "ticket": "SEC-123",
+      "reason": "Known fake-token leak in a legacy test agent while migration completes.",
+      "expires_at": "2099-01-01T00:00:00Z"
+    }
+  ]
+}

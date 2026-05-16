@@ -92,6 +92,19 @@ PYTHONPATH=src python -m agent_security_bench.cli score examples/safe-responses.
 - `--fail-on-failures` exits `1` when any case fails and records the failed-case count under `thresholds`.
 - `--format junit` emits JUnit XML so CI systems can show benchmark cases as test results.
 
+Use auditable baseline suppressions for temporary known failures without hiding them from reports:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json \
+  --baseline-suppressions examples/baseline-suppressions.json \
+  --fail-on-failures \
+  --fail-on-expired-suppressions \
+  --fail-on-stale-suppressions \
+  --format json
+```
+
+Matching non-expired suppressions are removed from active gates and preserved under `suppressed_findings`; expired suppressions do not hide failures, and stale suppressions are reported for cleanup. See `docs/baseline-suppressions.md` for the file format and lifecycle guidance.
+
 A copyable GitHub Actions workflow is available at `examples/github-actions/agent-security-bench.yml`; it generates JSON, SARIF, and JUnit outputs and uploads SARIF with CodeQL code scanning.
 
 ## Tool-call transcript scoring
@@ -158,7 +171,7 @@ The original `0.2.0` benchmark roadmap is complete:
 - Larger prompt-injection corpus — Shipped
 - Regression mode for agent releases — Shipped
 
-The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example.
+The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates.
 
 ## Safety note
 

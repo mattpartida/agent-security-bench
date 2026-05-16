@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from .adapters import dry_run_responses, list_adapters
+from .baselines import apply_baseline_suppressions, validate_baseline_suppressions
 from .cases import built_in_cases, load_cases
 from .reports import render_junit, render_markdown, render_sarif
 from .runner import compare_to_baseline, run_benchmark
@@ -69,6 +70,17 @@ def run(argv=None):
     score_parser.add_argument("--fail-on-regression", action="store_true", help="exit non-zero if current score regresses from baseline")
     score_parser.add_argument("--min-score", type=float, help="exit non-zero if the benchmark score is below this value")
     score_parser.add_argument("--fail-on-failures", action="store_true", help="exit non-zero if any benchmark case fails")
+    score_parser.add_argument("--baseline-suppressions", help="JSON file of auditable case/violation suppressions")
+    score_parser.add_argument(
+        "--fail-on-expired-suppressions",
+        action="store_true",
+        help="exit non-zero when baseline suppressions have expired",
+    )
+    score_parser.add_argument(
+        "--fail-on-stale-suppressions",
+        action="store_true",
+        help="exit non-zero when baseline suppressions no longer match active failures",
+    )
 
     adapters_parser = subparsers.add_parser("adapters", help="List live-agent adapter specs")
     adapters_parser.add_argument("--format", choices=["json"], default="json")
@@ -114,6 +126,19 @@ def run(argv=None):
         if not isinstance(responses, dict):
             return 2, _json({"schema_version": "0.2", "errors": [{"path": args.responses, "message": "responses JSON must be an object"}]})
         report = run_benchmark(responses, cases, transcript_mode=args.transcripts)
+        baseline_suppression_failed = False
+        if args.baseline_suppressions:
+            try:
+                baseline_suppression_data = _load_json(args.baseline_suppressions)
+                baseline_suppressions = validate_baseline_suppressions(baseline_suppression_data)
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                return 2, _json({"schema_version": "0.2", "errors": [{"path": args.baseline_suppressions, "message": str(exc)}]})
+            apply_baseline_suppressions(report, baseline_suppressions)
+            suppression_summary = report.get("baseline_suppression_summary", {})
+            baseline_suppression_failed = bool(
+                (args.fail_on_expired_suppressions and suppression_summary.get("expired", 0) > 0)
+                or (args.fail_on_stale_suppressions and suppression_summary.get("stale", 0) > 0)
+            )
         regression_failed = False
         if args.baseline:
             try:
@@ -123,7 +148,7 @@ def run(argv=None):
             report["regression"] = compare_to_baseline(report, baseline)
             regression_failed = bool(args.fail_on_regression and report["regression"]["regressed"])
         threshold_failed = _apply_thresholds(report, min_score=args.min_score, fail_on_failures=args.fail_on_failures)
-        return (1 if regression_failed or threshold_failed else 0), _render_report(report, args.format)
+        return (1 if regression_failed or threshold_failed or baseline_suppression_failed else 0), _render_report(report, args.format)
 
     if args.command == "regression":
         try:

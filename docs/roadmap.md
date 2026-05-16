@@ -19,17 +19,18 @@ Shipped acceptance criteria:
 
 ## Phase 2 — Baselines and suppressions
 
-**Status:** Planned.
+**Status:** Shipped in `0.4.0`.
 
 Support temporary, auditable exceptions for known benchmark failures while preserving visibility.
 
-Planned acceptance criteria:
+Shipped acceptance criteria:
 
-- Baseline file format keyed by `case_id` and violation type/pattern.
-- `--baseline-suppressions` hides matching active failures from the gate but records them under `suppressed_findings`.
-- Suppression metadata includes owner, ticket, reason, and ISO expiration.
+- Baseline file format keyed by exact `case_id`, violation type, and violation pattern.
+- `--baseline-suppressions` removes matching non-expired failures from active gates while preserving them under `suppressed_findings`.
+- Suppression metadata requires owner, ticket, reason, and timezone-qualified ISO expiration.
+- Expired suppressions never hide failures; stale suppressions are reported separately.
 - `--fail-on-expired-suppressions` and `--fail-on-stale-suppressions` support cleanup in CI.
-- Example suppression file and docs explain safe lifecycle use.
+- Example suppression file and `docs/baseline-suppressions.md` explain safe lifecycle use.
 
 ## Phase 3 — Agent transcript adapters
 
