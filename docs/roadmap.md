@@ -34,15 +34,16 @@ Shipped acceptance criteria:
 
 ## Phase 3 — Agent transcript adapters
 
-**Status:** Planned.
+**Status:** Shipped in `0.5.0`.
 
 Turn sandbox-gated adapter specs into real optional transcript collectors while keeping dry-run deterministic.
 
-Planned acceptance criteria:
+Shipped acceptance criteria:
 
 - Adapter interface returns normalized transcripts with response text, tool calls, timestamps, and adapter metadata.
-- Hermes/Codex/Claude collectors are opt-in and require explicit sandbox flags.
-- Adapter runs refuse real secrets and unsafe outbound destinations by default.
+- Dry-run and mock transcript collectors are deterministic and dependency-free for CI.
+- Hermes/Codex/Claude/OpenClaw collectors are opt-in and require explicit `--sandbox` before any external execution wiring.
+- Adapter runs refuse real external execution and unsafe live-agent invocation by default.
 - Tests cover dry-run and mocked adapter transcripts without invoking real external agents.
 
 ## Phase 4 — Corpus governance

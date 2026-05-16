@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from .adapters import dry_run_responses, list_adapters
+from .adapters import adapter_names, collect_transcripts, list_adapters
 from .baselines import apply_baseline_suppressions, validate_baseline_suppressions
 from .cases import built_in_cases, load_cases
 from .reports import render_junit, render_markdown, render_sarif
@@ -86,8 +86,10 @@ def run(argv=None):
     adapters_parser.add_argument("--format", choices=["json"], default="json")
 
     run_parser = subparsers.add_parser("run", help="Run cases through a live-agent adapter")
-    run_parser.add_argument("--adapter", choices=[adapter.name for adapter in list_adapters()], default="dry-run")
+    run_parser.add_argument("--adapter", choices=adapter_names(), default="dry-run")
     run_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
+    run_parser.add_argument("--sandbox", action="store_true", help="confirm adapter execution is sandboxed")
+    run_parser.add_argument("--mock-transcripts", help="JSON fixture for the mock transcript adapter")
     run_parser.add_argument("--format", choices=["json", "markdown", "sarif"], default="json")
 
     regression_parser = subparsers.add_parser("regression", help="Compare a current report against a baseline report")
@@ -110,11 +112,12 @@ def run(argv=None):
     if args.command == "run":
         try:
             cases = load_cases(args.cases) if args.cases else built_in_cases()
+            mock_data = _load_json(args.mock_transcripts) if args.mock_transcripts else None
+            transcripts = collect_transcripts(args.adapter, cases, sandbox=args.sandbox, mock_data=mock_data)
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
-            return 2, _json({"schema_version": "0.2", "errors": [{"path": args.cases, "message": str(exc)}]})
-        if args.adapter != "dry-run":
-            return 2, _json({"schema_version": "0.2", "errors": [{"message": f"adapter {args.adapter!r} requires external sandbox wiring"}]})
-        report = run_benchmark(dry_run_responses(cases), cases)
+            return 2, _json({"schema_version": "0.2", "errors": [{"path": args.cases or args.mock_transcripts, "message": str(exc)}]})
+        report = run_benchmark(transcripts, cases, transcript_mode=True)
+        report["adapter"] = {"name": args.adapter, "sandboxed": bool(args.sandbox or args.adapter == "dry-run")}
         return 0, _render_report(report, args.format)
 
     if args.command == "score":

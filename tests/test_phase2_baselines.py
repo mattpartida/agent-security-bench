@@ -174,8 +174,8 @@ class Phase2BaselineSuppressionTests(unittest.TestCase):
         self.assertIn("**Status:** Shipped", roadmap)
         self.assertIn("suppressed_findings", roadmap)
         self.assertIn("--fail-on-expired-suppressions", roadmap)
-        self.assertIn('version = "0.4.0"', pyproject)
-        self.assertIn('__version__ = "0.4.0"', package_init)
+        self.assertIn('version = "0.5.0"', pyproject)
+        self.assertIn('__version__ = "0.5.0"', package_init)
 
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn("--baseline-suppressions", readme)

@@ -123,7 +123,23 @@ List declared adapters:
 PYTHONPATH=src python -m agent_security_bench.cli adapters --format json
 ```
 
-The `dry-run` adapter is CI-safe and deterministic. Hermes, OpenClaw, Codex, and Claude adapter specs are present as sandbox-gated placeholders; real execution should only be wired in isolated environments with fake secrets, canary files, and no real outbound credentials.
+The `dry-run` adapter is CI-safe and deterministic. Use `run` to collect normalized transcripts and score them with transcript-mode checks:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli run --adapter dry-run --format json
+```
+
+For fixture-backed adapter tests, use the dependency-free `mock` adapter with an explicit sandbox flag:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli run \
+  --adapter mock \
+  --sandbox \
+  --mock-transcripts examples/tool-transcripts.json \
+  --format json
+```
+
+Normalized transcripts include `response`, `tool_calls`, `timestamp`, and adapter metadata. Hermes, OpenClaw, Codex, and Claude adapter specs are listed as `sandbox_required`; they require `--sandbox` and still refuse real external execution in this release so tests never invoke live agents or real outbound tools.
 
 ## Regression mode
 
@@ -171,7 +187,7 @@ The original `0.2.0` benchmark roadmap is complete:
 - Larger prompt-injection corpus — Shipped
 - Regression mode for agent releases — Shipped
 
-The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates.
+The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs.
 
 ## Safety note
 

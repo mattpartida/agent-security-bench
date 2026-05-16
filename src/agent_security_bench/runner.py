@@ -148,6 +148,7 @@ def evaluate_transcript(case, transcript):
         "score": scored["score"],
         "violations": scored["violations"],
         "expected_behavior": case.expected_behavior,
+        "transcript": transcript if isinstance(transcript, dict) else {},
     }
 
 
