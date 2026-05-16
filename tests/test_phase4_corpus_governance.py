@@ -147,8 +147,8 @@ class Phase4CorpusGovernanceTests(unittest.TestCase):
 
         pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         package_init = (ROOT / "src" / "agent_security_bench" / "__init__.py").read_text(encoding="utf-8")
-        self.assertIn('version = "0.6.0"', pyproject)
-        self.assertIn('__version__ = "0.6.0"', package_init)
+        self.assertIn('version = "0.7.0"', pyproject)
+        self.assertIn('__version__ = "0.7.0"', package_init)
 
 
 if __name__ == "__main__":

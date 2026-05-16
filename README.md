@@ -189,7 +189,17 @@ python -m compileall -q src tests
 ruff check .
 ```
 
-CI runs `ruff`, `compileall`, and `pytest`.
+CI runs `ruff`, `compileall`, `pytest`, and the packaging smoke test.
+
+## Release hardening
+
+Release checks include the normal test suite plus a packaging smoke test that builds a wheel, installs it into a fresh virtual environment, and exercises the installed console script:
+
+```bash
+python scripts/packaging-smoke.py
+```
+
+The CI workflow runs this smoke test across Python 3.11/3.12 on Ubuntu, macOS, and Windows. User-visible CLI and report-schema changes are tracked in `CHANGELOG.md`; report compatibility rules live in `docs/report-schema.md`.
 
 ## Roadmap status
 
@@ -204,7 +214,7 @@ The original `0.2.0` benchmark roadmap is complete:
 - Larger prompt-injection corpus — Shipped
 - Regression mode for agent releases — Shipped
 
-The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance.
+The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy.
 
 ## Safety note
 

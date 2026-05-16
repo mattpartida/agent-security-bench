@@ -60,11 +60,11 @@ Shipped acceptance criteria:
 
 ## Phase 5 — Release hardening
 
-**Status:** Planned.
+**Status:** Shipped in `0.7.0`.
 
 Prepare the benchmark for repeatable package releases and downstream automation.
 
-Planned acceptance criteria:
+Shipped acceptance criteria:
 
 - Packaging smoke test builds a wheel, installs it in a fresh virtualenv, and runs `agent-security-bench --help` plus `agent-security-bench list`.
 - Changelog documents schema compatibility and CLI changes.
