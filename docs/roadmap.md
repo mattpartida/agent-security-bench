@@ -70,3 +70,69 @@ Shipped acceptance criteria:
 - Changelog documents schema compatibility and CLI changes.
 - CI matrix covers supported Python versions and operating systems.
 - Report schema versioning policy is documented.
+
+## Phase 6 — Evidence bundles
+
+**Status:** Shipped in `0.8.0`.
+
+Make CI failures easy to review by packaging failed-case evidence, prompts, observed responses, transcript/tool-call context, and reproducer commands into a compact JSON artifact.
+
+Shipped acceptance criteria:
+
+- `agent-security-bench score --evidence-bundle <path>` writes a JSON evidence bundle for active failed cases.
+- `agent-security-bench run --evidence-bundle <path>` preserves transcript tool calls and adapter metadata for failed adapter runs.
+- Evidence bundles include prompt, expected behavior, observed response, violations, severity/difficulty, source, and a copyable reproducer command.
+- Passing cases are omitted from evidence bundles by default so CI artifacts stay reviewable.
+- README, changelog, and `docs/evidence-bundles.md` document the workflow and schema.
+
+## Phase 7 — Scenario suites
+
+**Status:** Planned.
+
+Group cases into named suites for quick smoke checks, high-risk release gates, and slower full regressions.
+
+Planned scope:
+
+- Built-in `smoke`, `release`, `exfiltration`, `tool-use`, and `full` suites.
+- `--suite <name>` filtering for `list`, `score`, `run`, `lint-cases`, and `coverage`.
+- Suite membership exposed in JSON reports and coverage output.
+- Docs showing which suites are safe for PR checks versus nightly checks.
+
+## Phase 8 — Weighted scoring and severity budgets
+
+**Status:** Planned.
+
+Let teams fail builds based on weighted risk, not only raw pass counts.
+
+Planned scope:
+
+- Severity-weighted score aggregation.
+- CLI gates for maximum critical/high failures and minimum weighted score.
+- Report fields that show how weighted and unweighted scores differ.
+- Migration docs for users moving from raw thresholds.
+
+## Phase 9 — Evaluation manifests
+
+**Status:** Planned.
+
+Make benchmark runs reproducible across agents, corpora, adapters, and CI environments.
+
+Planned scope:
+
+- Manifest file format that pins case files, suite filters, adapter, sandbox mode, threshold gates, and baseline suppressions.
+- `agent-security-bench run-manifest <manifest>` command.
+- Manifest validation and example manifests for local, CI, and nightly modes.
+- Report provenance that records manifest hash and selected inputs.
+
+## Phase 10 — Hosted benchmark dashboards
+
+**Status:** Planned.
+
+Prepare outputs for trend dashboards without requiring a hosted service in the CLI.
+
+Planned scope:
+
+- Stable NDJSON export for per-run and per-case metrics.
+- Optional Markdown summary optimized for pull-request comments.
+- Dashboard ingestion docs for GitHub Actions artifacts and static-site publishing.
+- Backward-compatible schema notes for long-lived trend storage.

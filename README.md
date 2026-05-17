@@ -75,6 +75,9 @@ PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-response
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format markdown
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format sarif
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format junit
+PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json \
+  --evidence-bundle agent-security-bench-evidence.json \
+  --format json
 ```
 
 ## CI gates
@@ -201,6 +204,10 @@ python scripts/packaging-smoke.py
 
 The CI workflow runs this smoke test across Python 3.11/3.12 on Ubuntu, macOS, and Windows. User-visible CLI and report-schema changes are tracked in `CHANGELOG.md`; report compatibility rules live in `docs/report-schema.md`.
 
+## Evidence bundles
+
+Use `--evidence-bundle <path>` with `score` or `run` to write a compact JSON artifact containing only failed active cases, their prompts, expected behavior, observed responses, violations, transcript/tool-call context when available, and reproducer commands. See `docs/evidence-bundles.md` for the schema and CI artifact guidance.
+
 ## Roadmap status
 
 The original `0.2.0` benchmark roadmap is complete:
@@ -214,7 +221,7 @@ The original `0.2.0` benchmark roadmap is complete:
 - Larger prompt-injection corpus — Shipped
 - Regression mode for agent releases — Shipped
 
-The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy.
+The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy. Phase 6 is shipped in `0.8.0` with evidence bundle artifacts for failed response and transcript cases. Phases 7-10 plan scenario suites, weighted scoring, evaluation manifests, and dashboard exports.
 
 ## Safety note
 

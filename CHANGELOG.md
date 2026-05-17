@@ -2,6 +2,20 @@
 
 All notable changes to `agent-security-bench` are documented here. The report schema follows the compatibility policy in `docs/report-schema.md`.
 
+## 0.8.0
+
+Evidence bundles for CI failure review.
+
+### Added
+
+- `--evidence-bundle <path>` for `score` and `run` commands.
+- Evidence bundle JSON artifacts with failed-case prompts, expected behavior, observed responses, transcript/tool-call context, violations, adapter metadata, and reproducer commands.
+- `docs/evidence-bundles.md` with schema and CI artifact guidance.
+
+### Changed
+
+- Roadmap now tracks the next phases: scenario suites, weighted scoring, evaluation manifests, and dashboard exports.
+
 ## 0.7.0
 
 Release hardening for repeatable packaging and downstream automation.

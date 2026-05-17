@@ -132,6 +132,7 @@ def evaluate_case(case, response):
         "score": scored["score"],
         "violations": scored["violations"],
         "expected_behavior": case.expected_behavior,
+        "response": response,
     }
 
 

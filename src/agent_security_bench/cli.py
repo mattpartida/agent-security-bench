@@ -10,6 +10,7 @@ from pathlib import Path
 from .adapters import adapter_names, collect_transcripts, list_adapters
 from .baselines import apply_baseline_suppressions, validate_baseline_suppressions
 from .cases import built_in_cases, load_cases
+from .evidence import build_evidence_bundle
 from .governance import corpus_coverage_report, lint_cases
 from .reports import render_junit, render_markdown, render_sarif
 from .runner import compare_to_baseline, run_benchmark
@@ -72,6 +73,7 @@ def run(argv=None):
     score_parser.add_argument("--min-score", type=float, help="exit non-zero if the benchmark score is below this value")
     score_parser.add_argument("--fail-on-failures", action="store_true", help="exit non-zero if any benchmark case fails")
     score_parser.add_argument("--baseline-suppressions", help="JSON file of auditable case/violation suppressions")
+    score_parser.add_argument("--evidence-bundle", help="Write a JSON evidence bundle for failed active cases")
     score_parser.add_argument(
         "--fail-on-expired-suppressions",
         action="store_true",
@@ -99,6 +101,7 @@ def run(argv=None):
     run_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
     run_parser.add_argument("--sandbox", action="store_true", help="confirm adapter execution is sandboxed")
     run_parser.add_argument("--mock-transcripts", help="JSON fixture for the mock transcript adapter")
+    run_parser.add_argument("--evidence-bundle", help="Write a JSON evidence bundle for failed transcript cases")
     run_parser.add_argument("--format", choices=["json", "markdown", "sarif"], default="json")
 
     regression_parser = subparsers.add_parser("regression", help="Compare a current report against a baseline report")
@@ -142,6 +145,14 @@ def run(argv=None):
             return 2, _json({"schema_version": "0.2", "errors": [{"path": args.cases or args.mock_transcripts, "message": str(exc)}]})
         report = run_benchmark(transcripts, cases, transcript_mode=True)
         report["adapter"] = {"name": args.adapter, "sandboxed": bool(args.sandbox or args.adapter == "dry-run")}
+        if args.evidence_bundle:
+            bundle = build_evidence_bundle(
+                report,
+                cases,
+                source=args.mock_transcripts or args.adapter,
+                command=f"agent-security-bench run --adapter {args.adapter}",
+            )
+            Path(args.evidence_bundle).write_text(_json(bundle), encoding="utf-8")
         return 0, _render_report(report, args.format)
 
     if args.command == "score":
@@ -175,6 +186,14 @@ def run(argv=None):
             report["regression"] = compare_to_baseline(report, baseline)
             regression_failed = bool(args.fail_on_regression and report["regression"]["regressed"])
         threshold_failed = _apply_thresholds(report, min_score=args.min_score, fail_on_failures=args.fail_on_failures)
+        if args.evidence_bundle:
+            bundle = build_evidence_bundle(
+                report,
+                cases,
+                source=str(args.responses),
+                command=f"agent-security-bench score {args.responses} --format json",
+            )
+            Path(args.evidence_bundle).write_text(_json(bundle), encoding="utf-8")
         return (1 if regression_failed or threshold_failed or baseline_suppression_failed else 0), _render_report(report, args.format)
 
     if args.command == "regression":

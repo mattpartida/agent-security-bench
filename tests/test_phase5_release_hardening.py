@@ -21,7 +21,7 @@ class Phase5ReleaseHardeningTests(unittest.TestCase):
                 timeout=240,
             )
         result = json.loads(completed.stdout)
-        self.assertIn("0.7.0", result["wheel"])
+        self.assertIn("0.8.0", result["wheel"])
         self.assertTrue(result["help_contains_description"])
         self.assertGreaterEqual(result["case_count"], 10)
         self.assertEqual(result["schema_version"], "0.2")
@@ -63,8 +63,8 @@ class Phase5ReleaseHardeningTests(unittest.TestCase):
         self.assertIn("additive", schema.lower())
         self.assertIn("**Status:** Shipped in `0.7.0`", roadmap)
         self.assertIn("Release hardening", readme)
-        self.assertIn('version = "0.7.0"', pyproject)
-        self.assertIn('__version__ = "0.7.0"', package_init)
+        self.assertIn('version = "0.8.0"', pyproject)
+        self.assertIn('__version__ = "0.8.0"', package_init)
 
 
 if __name__ == "__main__":
