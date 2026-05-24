@@ -14,6 +14,7 @@ from .evidence import build_evidence_bundle
 from .governance import corpus_coverage_report, lint_cases
 from .reports import render_junit, render_markdown, render_sarif
 from .runner import compare_to_baseline, run_benchmark
+from .suites import attach_result_suites, case_to_dict_with_suites, filter_cases_by_suite, suite_names
 
 
 def _json(data):
@@ -55,17 +56,35 @@ def _apply_thresholds(report, *, min_score=None, fail_on_failures=False):
     return bool(threshold["failed"])
 
 
+def _suite_error(path, exc):
+    return _json({
+        "schema_version": "0.2",
+        "errors": [{"path": path, "message": str(exc), "available_suites": list(suite_names())}],
+    })
+
+
+def _load_and_filter_cases(path, suite):
+    cases = load_cases(path) if path else built_in_cases()
+    return filter_cases_by_suite(cases, suite)
+
+
+def _is_unknown_suite_error(exc):
+    return isinstance(exc, ValueError) and str(exc).startswith("unknown suite")
+
+
 def run(argv=None):
     parser = argparse.ArgumentParser(description="Benchmark autonomous-agent security behavior")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     list_parser = subparsers.add_parser("list", help="List benchmark cases")
     list_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
+    list_parser.add_argument("--suite", help="Optional built-in scenario suite filter")
     list_parser.add_argument("--format", choices=["json"], default="json")
 
     score_parser = subparsers.add_parser("score", help="Score a JSON mapping of case_id -> response")
     score_parser.add_argument("responses", help="Path to responses JSON")
     score_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
+    score_parser.add_argument("--suite", help="Optional built-in scenario suite filter")
     score_parser.add_argument("--transcripts", action="store_true", help="treat responses as case_id -> transcript objects")
     score_parser.add_argument("--format", choices=["json", "markdown", "sarif", "junit"], default="json")
     score_parser.add_argument("--baseline", help="Optional baseline report for regression comparison")
@@ -90,15 +109,18 @@ def run(argv=None):
 
     lint_parser = subparsers.add_parser("lint-cases", help="Validate benchmark case corpus quality")
     lint_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
+    lint_parser.add_argument("--suite", help="Optional built-in scenario suite filter")
     lint_parser.add_argument("--format", choices=["json"], default="json")
 
     coverage_parser = subparsers.add_parser("coverage", help="Summarize benchmark corpus coverage")
     coverage_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
+    coverage_parser.add_argument("--suite", help="Optional built-in scenario suite filter")
     coverage_parser.add_argument("--format", choices=["json"], default="json")
 
     run_parser = subparsers.add_parser("run", help="Run cases through a live-agent adapter")
     run_parser.add_argument("--adapter", choices=adapter_names(), default="dry-run")
     run_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
+    run_parser.add_argument("--suite", help="Optional built-in scenario suite filter")
     run_parser.add_argument("--sandbox", action="store_true", help="confirm adapter execution is sandboxed")
     run_parser.add_argument("--mock-transcripts", help="JSON fixture for the mock transcript adapter")
     run_parser.add_argument("--evidence-bundle", help="Write a JSON evidence bundle for failed transcript cases")
@@ -113,38 +135,58 @@ def run(argv=None):
 
     if args.command == "list":
         try:
-            cases = load_cases(args.cases) if args.cases else built_in_cases()
+            cases, suite = _load_and_filter_cases(args.cases, args.suite)
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            if _is_unknown_suite_error(exc):
+                return 2, _suite_error(args.cases, exc)
             return 2, _json({"schema_version": "0.2", "errors": [{"path": args.cases, "message": str(exc)}]})
-        return 0, _json({"schema_version": "0.2", "cases": [case.to_dict() for case in cases]})
+        payload = {"schema_version": "0.2", "cases": [case_to_dict_with_suites(case) for case in cases]}
+        if suite:
+            payload["suite"] = suite
+        return 0, _json(payload)
 
     if args.command == "adapters":
         return 0, _json({"schema_version": "0.2", "adapters": [adapter.to_dict() for adapter in list_adapters()]})
 
     if args.command == "lint-cases":
         try:
-            cases = load_cases(args.cases) if args.cases else built_in_cases()
+            cases, suite = _load_and_filter_cases(args.cases, args.suite)
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            if _is_unknown_suite_error(exc):
+                return 2, _suite_error(args.cases, exc)
             return 2, _json({"schema_version": "0.2", "errors": [{"path": args.cases, "message": str(exc)}]})
         report = lint_cases(cases)
+        if suite:
+            report["suite"] = suite
         return (1 if report["summary"]["error_count"] else 0), _json(report)
 
     if args.command == "coverage":
         try:
-            cases = load_cases(args.cases) if args.cases else built_in_cases()
+            cases, suite = _load_and_filter_cases(args.cases, args.suite)
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            if _is_unknown_suite_error(exc):
+                return 2, _suite_error(args.cases, exc)
             return 2, _json({"schema_version": "0.2", "errors": [{"path": args.cases, "message": str(exc)}]})
-        return 0, _json(corpus_coverage_report(cases))
+        report = corpus_coverage_report(cases)
+        if suite:
+            report["suite"] = suite
+            report["suites"] = {suite["name"]: suite["case_count"]}
+        return 0, _json(report)
 
     if args.command == "run":
         try:
-            cases = load_cases(args.cases) if args.cases else built_in_cases()
+            cases, suite = _load_and_filter_cases(args.cases, args.suite)
             mock_data = _load_json(args.mock_transcripts) if args.mock_transcripts else None
             transcripts = collect_transcripts(args.adapter, cases, sandbox=args.sandbox, mock_data=mock_data)
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            if _is_unknown_suite_error(exc):
+                return 2, _suite_error(args.cases or args.mock_transcripts, exc)
             return 2, _json({"schema_version": "0.2", "errors": [{"path": args.cases or args.mock_transcripts, "message": str(exc)}]})
         report = run_benchmark(transcripts, cases, transcript_mode=True)
         report["adapter"] = {"name": args.adapter, "sandboxed": bool(args.sandbox or args.adapter == "dry-run")}
+        attach_result_suites(report, cases)
+        if suite:
+            report["suite"] = suite
         if args.evidence_bundle:
             bundle = build_evidence_bundle(
                 report,
@@ -157,13 +199,18 @@ def run(argv=None):
 
     if args.command == "score":
         try:
-            cases = load_cases(args.cases) if args.cases else built_in_cases()
+            cases, suite = _load_and_filter_cases(args.cases, args.suite)
             responses = _load_json(args.responses)
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            if _is_unknown_suite_error(exc):
+                return 2, _suite_error(args.responses, exc)
             return 2, _json({"schema_version": "0.2", "errors": [{"path": args.responses, "message": str(exc)}]})
         if not isinstance(responses, dict):
             return 2, _json({"schema_version": "0.2", "errors": [{"path": args.responses, "message": "responses JSON must be an object"}]})
         report = run_benchmark(responses, cases, transcript_mode=args.transcripts)
+        attach_result_suites(report, cases)
+        if suite:
+            report["suite"] = suite
         baseline_suppression_failed = False
         if args.baseline_suppressions:
             try:

@@ -116,8 +116,8 @@ class Phase3AdapterTranscriptTests(unittest.TestCase):
 
         pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         package_init = (ROOT / "src" / "agent_security_bench" / "__init__.py").read_text(encoding="utf-8")
-        self.assertIn('version = "0.8.0"', pyproject)
-        self.assertIn('__version__ = "0.8.0"', package_init)
+        self.assertIn('version = "0.9.0"', pyproject)
+        self.assertIn('__version__ = "0.9.0"', package_init)
 
 
 if __name__ == "__main__":

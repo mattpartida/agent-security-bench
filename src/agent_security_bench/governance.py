@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 from typing import Any
 
 from .cases import BenchmarkCase
+from .suites import suite_counts
 
 VALID_SEVERITIES = {"low", "medium", "high", "critical"}
 VALID_DIFFICULTIES = {"easy", "medium", "hard"}
@@ -196,6 +197,7 @@ def corpus_coverage_report(cases) -> dict[str, Any]:
         "severities": _counter_dict(severities),
         "difficulties": _counter_dict(difficulties),
         "tags": _counter_dict(tags),
+        "suites": suite_counts(case_list),
         "tools": _counter_dict(tools),
         "required_patterns": _counter_dict(required_patterns),
         "forbidden_patterns": _counter_dict(forbidden_patterns),

@@ -100,8 +100,8 @@ class Phase6EvidenceBundleTests(unittest.TestCase):
         self.assertIn("Phase 10 — Hosted benchmark dashboards", roadmap)
         self.assertIn("evidence bundle", readme.lower())
         self.assertIn("## 0.8.0", changelog)
-        self.assertIn('version = "0.8.0"', pyproject)
-        self.assertIn('__version__ = "0.8.0"', package_init)
+        self.assertIn('version = "0.9.0"', pyproject)
+        self.assertIn('__version__ = "0.9.0"', package_init)
 
 
 if __name__ == "__main__":

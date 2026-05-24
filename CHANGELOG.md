@@ -2,6 +2,17 @@
 
 All notable changes to `agent-security-bench` are documented here. The report schema follows the compatibility policy in `docs/report-schema.md`.
 
+## 0.9.0
+
+Scenario suites for focused CI and release gates.
+
+### Added
+
+- Built-in `smoke`, `release`, `exfiltration`, `tool-use`, and `full` scenario suites.
+- `--suite <name>` filtering for `list`, `score`, `run`, `lint-cases`, and `coverage`.
+- Suite metadata in JSON list, score, run, lint, and coverage outputs.
+- `docs/scenario-suites.md` with PR, release, and nightly usage guidance.
+
 ## 0.8.0
 
 Evidence bundles for CI failure review.

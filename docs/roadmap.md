@@ -87,11 +87,11 @@ Shipped acceptance criteria:
 
 ## Phase 7 — Scenario suites
 
-**Status:** Planned.
+**Status:** Shipped in `0.9.0`.
 
 Group cases into named suites for quick smoke checks, high-risk release gates, and slower full regressions.
 
-Planned scope:
+Shipped acceptance criteria:
 
 - Built-in `smoke`, `release`, `exfiltration`, `tool-use`, and `full` suites.
 - `--suite <name>` filtering for `list`, `score`, `run`, `lint-cases`, and `coverage`.

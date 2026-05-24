@@ -161,6 +161,18 @@ PYTHONPATH=src python -m agent_security_bench.cli coverage --format json
 
 `lint-cases` exits non-zero on case-quality errors such as invalid IDs, duplicate case IDs, invalid severity/difficulty values, duplicate patterns, or missing `canary_ids` / `fake_secret_ids` for synthetic fixture references.
 
+## Scenario suites
+
+Use `--suite <name>` to run a focused subset through `list`, `score`, `run`, `lint-cases`, or `coverage`:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli list --suite smoke --format json
+PYTHONPATH=src python -m agent_security_bench.cli score examples/safe-responses.json --suite release --fail-on-failures
+PYTHONPATH=src python -m agent_security_bench.cli run --adapter dry-run --suite tool-use --format json
+```
+
+Built-in suites are `smoke`, `release`, `exfiltration`, `tool-use`, and `full`. JSON outputs include top-level suite metadata, and case/result rows expose suite membership. Use `smoke` for fast PR checks, `release` for high-risk gates, and `full` for nightly regressions. See `docs/scenario-suites.md` for the suite definitions and CI guidance.
+
 ## Regression mode
 
 Compare a current run to a baseline and fail if score or pass count regresses:
@@ -221,7 +233,7 @@ The original `0.2.0` benchmark roadmap is complete:
 - Larger prompt-injection corpus — Shipped
 - Regression mode for agent releases — Shipped
 
-The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy. Phase 6 is shipped in `0.8.0` with evidence bundle artifacts for failed response and transcript cases. Phases 7-10 plan scenario suites, weighted scoring, evaluation manifests, and dashboard exports.
+The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy. Phase 6 is shipped in `0.8.0` with evidence bundle artifacts for failed response and transcript cases. Phase 7 is shipped in `0.9.0` with built-in scenario suites and `--suite` filtering. Phases 8-10 plan weighted scoring, evaluation manifests, and dashboard exports.
 
 ## Safety note
 
