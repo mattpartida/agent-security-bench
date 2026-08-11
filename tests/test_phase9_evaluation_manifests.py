@@ -367,7 +367,7 @@ class Phase9EvaluationManifestTests(unittest.TestCase):
         self.assertEqual((markdown_code, sarif_code, junit_code), (0, 0, 0))
         self.assertIn("## Evaluation manifest", markdown)
         self.assertIn(expected_hash, markdown)
-        self.assertIn(str(manifest), markdown)
+        self.assertIn(manifest.as_posix(), markdown)
         self.assertIn('"schema_version": "1.0"', markdown)
         self.assertIn('"adapter": "dry-run"', markdown)
         sarif = json.loads(sarif_output)
@@ -375,7 +375,7 @@ class Phase9EvaluationManifestTests(unittest.TestCase):
         junit = ET.fromstring(junit_output)
         properties = {item.attrib["name"]: item.attrib["value"] for item in junit.findall(".//property")}
         self.assertEqual(properties["evaluation_manifest.schema_version"], "1.0")
-        self.assertEqual(properties["evaluation_manifest.path"], str(manifest))
+        self.assertEqual(properties["evaluation_manifest.path"], manifest.as_posix())
         self.assertEqual(properties["evaluation_manifest.sha256"], expected_hash)
         self.assertIn('"adapter":"dry-run"', properties["evaluation_manifest.selected_inputs"])
 
