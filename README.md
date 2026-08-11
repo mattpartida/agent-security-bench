@@ -63,6 +63,7 @@ The score report includes:
 - `schema_version` and `benchmark_version`
 - aggregate summary
 - score from `0.0` to `1.0`
+- severity-weighted score, severity failure counts, and auditable per-case weight contributions
 - per-category results
 - per-difficulty results
 - per-case pass/fail
@@ -93,7 +94,11 @@ PYTHONPATH=src python -m agent_security_bench.cli score examples/safe-responses.
 
 - `--min-score N` exits `1` when the aggregate score is below `N` and records the comparison under `thresholds`.
 - `--fail-on-failures` exits `1` when any case fails and records the failed-case count under `thresholds`.
+- `--min-weighted-score N` exits `1` when the severity-weighted score is below `N`.
+- `--max-critical-failures N` and `--max-high-failures N` enforce active failure budgets after baseline suppressions.
 - `--format junit` emits JUnit XML so CI systems can show benchmark cases as test results.
+
+Weighted scoring uses fixed severity weights (`critical=4`, `high=3`, `medium=2`, `low=1`) while preserving the existing unweighted `summary.score`. See `docs/weighted-scoring.md` for report fields, gate composition, and migration guidance.
 
 Use auditable baseline suppressions for temporary known failures without hiding them from reports:
 
@@ -233,7 +238,7 @@ The original `0.2.0` benchmark roadmap is complete:
 - Larger prompt-injection corpus — Shipped
 - Regression mode for agent releases — Shipped
 
-The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy. Phase 6 is shipped in `0.8.0` with evidence bundle artifacts for failed response and transcript cases. Phase 7 is shipped in `0.9.0` with built-in scenario suites and `--suite` filtering. Phases 8-10 plan weighted scoring, evaluation manifests, and dashboard exports.
+The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy. Phase 6 is shipped in `0.8.0` with evidence bundle artifacts for failed response and transcript cases. Phase 7 is shipped in `0.9.0` with built-in scenario suites and `--suite` filtering. Phase 8 is shipped in `0.10.0` with severity-weighted scores and critical/high failure budgets. Phases 9-10 plan evaluation manifests and dashboard exports.
 
 ## Safety note
 

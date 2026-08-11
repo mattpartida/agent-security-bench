@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from .runner import aggregate_results
+
 REQUIRED_SUPPRESSION_FIELDS = ("case_id", "violation_type", "pattern", "owner", "ticket", "reason", "expires_at")
 
 
@@ -65,26 +67,8 @@ def _recompute_result_after_suppression(result: dict[str, Any], violations: list
     return updated
 
 
-def _average_bucket_scores(results: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any]]:
-    buckets: dict[str, dict[str, Any]] = {}
-    for result in results:
-        bucket = buckets.setdefault(result[key], {"total": 0, "passed": 0, "score": 0.0})
-        bucket["total"] += 1
-        bucket["passed"] += 1 if result["passed"] else 0
-        bucket["score"] += result["score"]
-    for bucket in buckets.values():
-        bucket["score"] = round(bucket["score"] / bucket["total"], 4) if bucket["total"] else 0.0
-    return buckets
-
-
 def _recompute_report_summary(report: dict[str, Any], results: list[dict[str, Any]]) -> None:
-    total = len(results)
-    passed = sum(1 for result in results if result["passed"])
-    score = round(sum(result["score"] for result in results) / total, 4) if total else 0.0
-    report["summary"] = {"total": total, "passed": passed, "failed": total - passed, "score": score}
-    report["by_category"] = _average_bucket_scores(results, "category")
-    report["by_difficulty"] = _average_bucket_scores(results, "difficulty")
-    report["results"] = results
+    report.update(aggregate_results(results))
 
 
 def apply_baseline_suppressions(

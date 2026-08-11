@@ -100,16 +100,17 @@ Shipped acceptance criteria:
 
 ## Phase 8 — Weighted scoring and severity budgets
 
-**Status:** Planned.
+**Status:** Shipped in `0.10.0`.
 
 Let teams fail builds based on weighted risk, not only raw pass counts.
 
-Planned scope:
+Shipped acceptance criteria:
 
-- Severity-weighted score aggregation.
-- CLI gates for maximum critical/high failures and minimum weighted score.
-- Report fields that show how weighted and unweighted scores differ.
-- Migration docs for users moving from raw thresholds.
+- Severity-weighted score aggregation with fixed, published weights for critical, high, medium, and low cases.
+- `--min-weighted-score`, `--max-critical-failures`, and `--max-high-failures` CI gates.
+- Additive JSON and Markdown report fields that show weighted versus unweighted scores, per-severity failures, and per-case contributions.
+- Baseline suppressions recompute weighted scores and active severity budgets before gates run.
+- `docs/weighted-scoring.md` migration guidance for users moving from raw thresholds.
 
 ## Phase 9 — Evaluation manifests
 

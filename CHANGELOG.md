@@ -2,6 +2,22 @@
 
 All notable changes to `agent-security-bench` are documented here. The report schema follows the compatibility policy in `docs/report-schema.md`.
 
+## 0.10.0
+
+Severity-weighted scoring and explicit critical/high failure budgets.
+
+### Added
+
+- Additive weighted-score metadata, fixed severity weights, per-severity failure counts, and per-case weighted contributions.
+- `--min-weighted-score`, `--max-critical-failures`, and `--max-high-failures` CI gates.
+- Weighted score and severity summaries in Markdown reports.
+- `docs/weighted-scoring.md` with scoring, gate-composition, suppression, and migration guidance.
+
+### Changed
+
+- Baseline suppression recomputation now refreshes weighted aggregates and severity budgets before threshold evaluation.
+- Score thresholds reject non-finite/out-of-range values, and severity budgets reject negative values instead of allowing ambiguous CI policies.
+
 ## 0.9.0
 
 Scenario suites for focused CI and release gates.

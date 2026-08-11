@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -25,6 +26,20 @@ def _load_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def _score_threshold(value):
+    parsed = float(value)
+    if not math.isfinite(parsed) or not 0.0 <= parsed <= 1.0:
+        raise argparse.ArgumentTypeError("invalid score threshold: expected a finite value from 0.0 to 1.0")
+    return parsed
+
+
+def _failure_budget(value):
+    parsed = int(value)
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("invalid failure budget: expected a non-negative integer")
+    return parsed
+
+
 def _render_report(report, fmt):
     if fmt == "markdown":
         return render_markdown(report) + "\n"
@@ -35,15 +50,38 @@ def _render_report(report, fmt):
     return _json(report)
 
 
-def _apply_thresholds(report, *, min_score=None, fail_on_failures=False):
+def _apply_thresholds(
+    report,
+    *,
+    min_score=None,
+    min_weighted_score=None,
+    max_critical_failures=None,
+    max_high_failures=None,
+    fail_on_failures=False,
+):
     """Attach threshold metadata and return whether the report failed policy."""
 
-    threshold = {"failed": False}
+    threshold: dict[str, object] = {"failed": False}
     if min_score is not None:
         current_score = float(report.get("summary", {}).get("score", 0.0))
         threshold["min_score"] = float(min_score)
         threshold["score"] = current_score
         if current_score < float(min_score):
+            threshold["failed"] = True
+    if min_weighted_score is not None:
+        weighted_score = float(report.get("summary", {}).get("weighted_score", 0.0))
+        threshold["min_weighted_score"] = float(min_weighted_score)
+        threshold["weighted_score"] = weighted_score
+        if weighted_score < float(min_weighted_score):
+            threshold["failed"] = True
+    failures_by_severity = report.get("summary", {}).get("failures_by_severity", {})
+    for severity, maximum in (("critical", max_critical_failures), ("high", max_high_failures)):
+        if maximum is None:
+            continue
+        failures = int(failures_by_severity.get(severity, 0))
+        threshold[f"max_{severity}_failures"] = int(maximum)
+        threshold[f"{severity}_failures"] = failures
+        if failures > int(maximum):
             threshold["failed"] = True
     if fail_on_failures:
         failed_cases = int(report.get("summary", {}).get("failed", 0))
@@ -89,7 +127,22 @@ def run(argv=None):
     score_parser.add_argument("--format", choices=["json", "markdown", "sarif", "junit"], default="json")
     score_parser.add_argument("--baseline", help="Optional baseline report for regression comparison")
     score_parser.add_argument("--fail-on-regression", action="store_true", help="exit non-zero if current score regresses from baseline")
-    score_parser.add_argument("--min-score", type=float, help="exit non-zero if the benchmark score is below this value")
+    score_parser.add_argument("--min-score", type=_score_threshold, help="exit non-zero if the benchmark score is below this value")
+    score_parser.add_argument(
+        "--min-weighted-score",
+        type=_score_threshold,
+        help="exit non-zero if the severity-weighted score is below this value",
+    )
+    score_parser.add_argument(
+        "--max-critical-failures",
+        type=_failure_budget,
+        help="exit non-zero if active critical failures exceed this budget",
+    )
+    score_parser.add_argument(
+        "--max-high-failures",
+        type=_failure_budget,
+        help="exit non-zero if active high failures exceed this budget",
+    )
     score_parser.add_argument("--fail-on-failures", action="store_true", help="exit non-zero if any benchmark case fails")
     score_parser.add_argument("--baseline-suppressions", help="JSON file of auditable case/violation suppressions")
     score_parser.add_argument("--evidence-bundle", help="Write a JSON evidence bundle for failed active cases")
@@ -232,7 +285,14 @@ def run(argv=None):
                 return 2, _json({"schema_version": "0.2", "errors": [{"path": args.baseline, "message": str(exc)}]})
             report["regression"] = compare_to_baseline(report, baseline)
             regression_failed = bool(args.fail_on_regression and report["regression"]["regressed"])
-        threshold_failed = _apply_thresholds(report, min_score=args.min_score, fail_on_failures=args.fail_on_failures)
+        threshold_failed = _apply_thresholds(
+            report,
+            min_score=args.min_score,
+            min_weighted_score=args.min_weighted_score,
+            max_critical_failures=args.max_critical_failures,
+            max_high_failures=args.max_high_failures,
+            fail_on_failures=args.fail_on_failures,
+        )
         if args.evidence_bundle:
             bundle = build_evidence_bundle(
                 report,

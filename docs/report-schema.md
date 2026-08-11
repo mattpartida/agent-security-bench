@@ -7,14 +7,14 @@
 Common report fields include:
 
 - `schema_version`: machine-readable report schema version.
-- `summary`: aggregate case counts, pass/fail counts, and score metadata.
+- `summary`: aggregate case counts, pass/fail counts, unweighted `score`, additive weighted-score metadata, and active failure counts by severity.
 - `results`: per-case evaluation results.
-- `thresholds`: optional CI gate metadata for `--min-score` and `--fail-on-failures`.
+- `thresholds`: optional CI gate metadata for raw/weighted minimum scores, severity budgets, and `--fail-on-failures`.
 - `regression`: optional regression comparison metadata.
 - `suppressed_findings`, `suppressed_summary`, and `baseline_suppression_summary`: optional baseline-suppression audit metadata.
 - `adapter`: optional live-adapter metadata for `run` outputs.
 
-Per-case results include stable case metadata (`id`, `category`, `title`, `severity`, `difficulty`, `tags`) plus scoring fields (`passed`, `score`, `violations`, `missing_required_patterns`). Transcript-mode results may include `transcript_metadata`.
+Per-case results include stable case metadata (`id`, `category`, `title`, `severity`, `difficulty`, `tags`) plus scoring fields (`passed`, `score`, `violations`, `missing_required_patterns`). Additive Phase 8 fields expose `severity_weight` and `weighted_score_contribution`. Transcript-mode results may include `transcript_metadata`.
 
 ## Compatibility policy
 

@@ -21,15 +21,30 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         f"**Benchmark version:** {report.get('benchmark_version', 'unknown')}",
         f"**Score:** {summary['score']}",
+        f"**Unweighted score:** {summary['score']}",
+        f"**Weighted score:** {summary.get('weighted_score', summary['score'])}",
         f"**Passed:** {summary['passed']} / {summary['total']}",
         f"**Failed:** {summary['failed']}",
         "",
-        "## By category",
+        "## Failures by severity",
         "",
     ]
+    for severity, count in summary.get("failures_by_severity", {}).items():
+        lines.append(f"- **{severity}:** {count}")
+    lines.extend([
+        "",
+        "## By category",
+        "",
+    ])
     for category, bucket in sorted(report.get("by_category", {}).items()):
         lines.append(f"- **{category}:** {bucket['passed']}/{bucket['total']} passed, score {bucket['score']}")
-    lines.extend(["", "## Results", "", "| Case | Category | Difficulty | Severity | Result | Score | Violations |", "| --- | --- | --- | --- | --- | ---: | --- |"])
+    lines.extend([
+        "",
+        "## Results",
+        "",
+        "| Case | Category | Difficulty | Severity | Result | Score | Severity weight | Weighted contribution | Violations |",
+        "| --- | --- | --- | --- | --- | ---: | ---: | ---: | --- |",
+    ])
     for result in report.get("results", []):
         outcome = "PASS" if result["passed"] else "FAIL"
         violations = ", ".join(f"{item['type']}:{item['pattern']}" for item in result.get("violations", []))
@@ -43,6 +58,8 @@ def render_markdown(report: dict[str, Any]) -> str:
                     result["severity"],
                     outcome,
                     str(result["score"]),
+                    str(result.get("severity_weight", "-")),
+                    str(result.get("weighted_score_contribution", "-")),
                     violations.replace("|", "\\|") or "-",
                 ]
             )
