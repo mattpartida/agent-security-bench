@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "case_files": [],
+  "suite": "smoke",
+  "adapter": "dry-run",
+  "sandbox": false,
+  "thresholds": {
+    "min_score": 1.0,
+    "min_weighted_score": 1.0,
+    "max_critical_failures": 0,
+    "max_high_failures": 0,
+    "fail_on_failures": true
+  }
+}

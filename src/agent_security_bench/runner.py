@@ -208,7 +208,7 @@ def aggregate_results(results):
 
 
 def run_benchmark(responses, cases=None, *, transcript_mode=False):
-    cases = list(cases or built_in_cases())
+    cases = built_in_cases() if cases is None else list(cases)
     if transcript_mode:
         results = [evaluate_transcript(case, (responses or {}).get(case.id, {})) for case in cases]
     else:

@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "case_files": [],
+  "suite": "full",
+  "adapter": "dry-run",
+  "sandbox": false,
+  "thresholds": {}
+}

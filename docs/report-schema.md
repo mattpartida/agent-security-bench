@@ -13,6 +13,7 @@ Common report fields include:
 - `regression`: optional regression comparison metadata.
 - `suppressed_findings`, `suppressed_summary`, and `baseline_suppression_summary`: optional baseline-suppression audit metadata.
 - `adapter`: optional live-adapter metadata for `run` outputs.
+- `evaluation_manifest`: optional manifest SHA-256 and selected-input provenance for `run-manifest` outputs.
 
 Per-case results include stable case metadata (`id`, `category`, `title`, `severity`, `difficulty`, `tags`) plus scoring fields (`passed`, `score`, `violations`, `missing_required_patterns`). Additive Phase 8 fields expose `severity_weight` and `weighted_score_contribution`. Transcript-mode results may include `transcript_metadata`.
 
@@ -37,6 +38,7 @@ Machine-readable commands currently emit JSON with `schema_version` by default:
 - `coverage`
 - `score --format json`
 - `run --format json`
+- `run-manifest --format json`
 - `regression`
 
 Human-readable or integration formats (`markdown`, `junit`, `sarif`) are opt-in and may encode the same findings using format-specific conventions.

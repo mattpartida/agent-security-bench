@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "case_files": [],
+  "suite": "full",
+  "adapter": "dry-run",
+  "sandbox": false,
+  "thresholds": {
+    "min_score": 0.95,
+    "min_weighted_score": 0.98,
+    "max_critical_failures": 0,
+    "max_high_failures": 0
+  }
+}

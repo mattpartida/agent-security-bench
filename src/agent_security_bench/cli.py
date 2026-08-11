@@ -7,12 +7,14 @@ import json
 import math
 import sys
 from pathlib import Path
+from typing import Any
 
 from .adapters import adapter_names, collect_transcripts, list_adapters
 from .baselines import apply_baseline_suppressions, validate_baseline_suppressions
 from .cases import built_in_cases, load_cases
 from .evidence import build_evidence_bundle
 from .governance import corpus_coverage_report, lint_cases
+from .manifests import load_evaluation_manifest
 from .reports import render_junit, render_markdown, render_sarif
 from .runner import compare_to_baseline, run_benchmark
 from .suites import attach_result_suites, case_to_dict_with_suites, filter_cases_by_suite, suite_names
@@ -179,6 +181,10 @@ def run(argv=None):
     run_parser.add_argument("--evidence-bundle", help="Write a JSON evidence bundle for failed transcript cases")
     run_parser.add_argument("--format", choices=["json", "markdown", "sarif"], default="json")
 
+    manifest_parser = subparsers.add_parser("run-manifest", help="Run a content-pinned evaluation manifest")
+    manifest_parser.add_argument("manifest", help="Path to an evaluation manifest JSON file")
+    manifest_parser.add_argument("--format", choices=["json", "markdown", "sarif", "junit"], default="json")
+
     regression_parser = subparsers.add_parser("regression", help="Compare a current report against a baseline report")
     regression_parser.add_argument("current", help="Current report JSON")
     regression_parser.add_argument("--baseline", required=True, help="Baseline report JSON")
@@ -225,6 +231,46 @@ def run(argv=None):
             report["suite"] = suite
             report["suites"] = {suite["name"]: suite["case_count"]}
         return 0, _json(report)
+
+    if args.command == "run-manifest":
+        try:
+            loaded = load_evaluation_manifest(args.manifest)
+            adapter = loaded.manifest["adapter"]
+            sandbox = loaded.manifest["sandbox"]
+            transcripts = collect_transcripts(
+                adapter,
+                loaded.cases,
+                sandbox=sandbox,
+                mock_data=loaded.mock_data,
+            )
+        except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            return 2, _json({"schema_version": "0.2", "errors": [{"path": args.manifest, "message": str(exc)}]})
+
+        manifest_report: dict[str, Any] = run_benchmark(transcripts, loaded.cases, transcript_mode=True)
+        manifest_report["adapter"] = {"name": adapter, "sandboxed": bool(sandbox or adapter == "dry-run")}
+        attach_result_suites(manifest_report, loaded.cases)
+        if loaded.suite:
+            manifest_report["suite"] = loaded.suite
+
+        thresholds = loaded.manifest["thresholds"]
+        suppression_failed = False
+        if loaded.baseline_suppressions is not None:
+            apply_baseline_suppressions(manifest_report, loaded.baseline_suppressions)
+            suppression_summary = manifest_report.get("baseline_suppression_summary", {})
+            suppression_failed = bool(
+                (thresholds.get("fail_on_expired_suppressions", False) and suppression_summary.get("expired", 0) > 0)
+                or (thresholds.get("fail_on_stale_suppressions", False) and suppression_summary.get("stale", 0) > 0)
+            )
+        threshold_failed = _apply_thresholds(
+            manifest_report,
+            min_score=thresholds.get("min_score"),
+            min_weighted_score=thresholds.get("min_weighted_score"),
+            max_critical_failures=thresholds.get("max_critical_failures"),
+            max_high_failures=thresholds.get("max_high_failures"),
+            fail_on_failures=thresholds.get("fail_on_failures", False),
+        )
+        manifest_report["evaluation_manifest"] = loaded.provenance
+        return (1 if suppression_failed or threshold_failed else 0), _render_report(manifest_report, args.format)
 
     if args.command == "run":
         try:

@@ -115,6 +115,18 @@ Matching non-expired suppressions are removed from active gates and preserved un
 
 A copyable GitHub Actions workflow is available at `examples/github-actions/agent-security-bench.yml`; it generates JSON, SARIF, and JUnit outputs and uploads SARIF with CodeQL code scanning.
 
+## Evaluation manifests
+
+Keep the corpus, suite, adapter mode, suppressions, and CI thresholds in one content-pinned manifest:
+
+```bash
+PYTHONPATH=src python -m agent_security_bench.cli run-manifest \
+  examples/manifests/ci.json \
+  --format json
+```
+
+External case files, mock transcripts, and suppression baselines carry SHA-256 pins. Paths resolve relative to the manifest, and every report records the manifest hash plus selected inputs under `evaluation_manifest`. Strict local, CI, and nightly examples live in `examples/manifests/`. See `docs/evaluation-manifests.md` for the schema, validation rules, and provenance contract.
+
 ## Tool-call transcript scoring
 
 Use `--transcripts` when inputs are `case_id -> transcript` objects with `response` and `tool_calls` fields. Transcript scoring flags unsafe tool calls, canary exfiltration, and fake-secret exfiltration in addition to text response violations.
@@ -238,7 +250,7 @@ The original `0.2.0` benchmark roadmap is complete:
 - Larger prompt-injection corpus — Shipped
 - Regression mode for agent releases — Shipped
 
-The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy. Phase 6 is shipped in `0.8.0` with evidence bundle artifacts for failed response and transcript cases. Phase 7 is shipped in `0.9.0` with built-in scenario suites and `--suite` filtering. Phase 8 is shipped in `0.10.0` with severity-weighted scores and critical/high failure budgets. Phases 9-10 plan evaluation manifests and dashboard exports.
+The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy. Phase 6 is shipped in `0.8.0` with evidence bundle artifacts for failed response and transcript cases. Phase 7 is shipped in `0.9.0` with built-in scenario suites and `--suite` filtering. Phase 8 is shipped in `0.10.0` with severity-weighted scores and critical/high failure budgets. Phase 9 is shipped in `0.11.0` with content-pinned evaluation manifests and report provenance. Phase 10 plans dashboard exports.
 
 ## Safety note
 

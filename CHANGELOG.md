@@ -2,6 +2,21 @@
 
 All notable changes to `agent-security-bench` are documented here. The report schema follows the compatibility policy in `docs/report-schema.md`.
 
+## 0.11.0
+
+Content-pinned evaluation manifests for reproducible benchmark runs.
+
+### Added
+
+- `run-manifest` command with strict manifest validation and JSON, Markdown, SARIF, and JUnit output.
+- SHA-256 pins for external case files, mock transcript fixtures, and baseline-suppression files.
+- Additive manifest-digest and selected-input provenance in JSON, Markdown, SARIF, and JUnit reports.
+- Local, CI, and nightly example manifests plus `docs/evaluation-manifests.md`.
+
+### Changed
+
+- Manifest-driven runs compose baseline cleanup, raw/weighted score, failure, and severity-budget gates after suppressions.
+
 ## 0.10.0
 
 Severity-weighted scoring and explicit critical/high failure budgets.

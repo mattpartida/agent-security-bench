@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
+
+from .strict_json import loads_strict_json
 
 BENCHMARK_VERSION = "0.2"
 
@@ -70,7 +71,7 @@ def _parse_scalar(value: str) -> Any:
     return value.strip('"\'')
 
 
-def _load_simple_yaml(path: Path) -> list[dict[str, Any]]:
+def _load_simple_yaml_text(text: str) -> list[dict[str, Any]]:
     """Parse the small dependency-free YAML subset used by case fixtures.
 
     Supported shape:
@@ -82,7 +83,7 @@ def _load_simple_yaml(path: Path) -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
     current: dict[str, Any] | None = None
     current_list_key: str | None = None
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
+    for raw_line in text.splitlines():
         if not raw_line.strip() or raw_line.lstrip().startswith("#"):
             continue
         stripped = raw_line.strip()
@@ -121,20 +122,35 @@ def _load_simple_yaml(path: Path) -> list[dict[str, Any]]:
     return cases
 
 
-def load_cases(path: str | Path) -> list[BenchmarkCase]:
-    """Load benchmark cases from JSON, JSONL, or a small YAML subset."""
-    path = Path(path)
-    suffix = path.suffix.lower()
+def _load_json_strict(text: str) -> Any:
+    return loads_strict_json(text, "case file")
+
+
+def load_cases_bytes(data: bytes, *, suffix: str) -> list[BenchmarkCase]:
+    """Load benchmark cases from one verified byte sequence."""
+
+    text = data.decode("utf-8")
+    suffix = suffix.lower()
     if suffix == ".jsonl":
-        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        rows = [_load_json_strict(line) for line in text.splitlines() if line.strip()]
     elif suffix in {".yaml", ".yml"}:
-        rows = _load_simple_yaml(path)
+        rows = _load_simple_yaml_text(text)
     else:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = _load_json_strict(text)
         rows = payload.get("cases", payload) if isinstance(payload, dict) else payload
     if not isinstance(rows, list):
         raise ValueError("case file must contain a list or {'cases': [...]}")
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise ValueError(f"case row {index} must be an object")
     return [_case_from_mapping(row) for row in rows]
+
+
+def load_cases(path: str | Path) -> list[BenchmarkCase]:
+    """Load benchmark cases from JSON, JSONL, or a small YAML subset."""
+
+    path = Path(path)
+    return load_cases_bytes(path.read_bytes(), suffix=path.suffix)
 
 
 def built_in_cases():

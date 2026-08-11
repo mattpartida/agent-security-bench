@@ -114,16 +114,16 @@ Shipped acceptance criteria:
 
 ## Phase 9 — Evaluation manifests
 
-**Status:** Planned.
+**Status:** Shipped in `0.11.0`.
 
 Make benchmark runs reproducible across agents, corpora, adapters, and CI environments.
 
-Planned scope:
+Shipped acceptance criteria:
 
-- Manifest file format that pins case files, suite filters, adapter, sandbox mode, threshold gates, and baseline suppressions.
-- `agent-security-bench run-manifest <manifest>` command.
-- Manifest validation and example manifests for local, CI, and nightly modes.
-- Report provenance that records manifest hash and selected inputs.
+- Strict JSON manifest format that content-pins case files, suite filters, adapter, sandbox mode, threshold gates, mock transcripts, and baseline suppressions.
+- `agent-security-bench run-manifest <manifest>` with composed suppression, score, weighted-score, and severity-budget gates.
+- Fail-closed validation plus copyable local, CI, and nightly manifests.
+- Report provenance that records the manifest SHA-256 and every selected input.
 
 ## Phase 10 — Hosted benchmark dashboards
 

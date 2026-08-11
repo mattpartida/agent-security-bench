@@ -2,15 +2,25 @@
 
 from __future__ import annotations
 
+import json
 from html import escape
 from typing import Any
 
 
+def _is_xml_10_character(character: str) -> bool:
+    codepoint = ord(character)
+    if character in "\t\n\r":
+        return True
+    in_xml_range = 0x20 <= codepoint <= 0xD7FF or 0xE000 <= codepoint <= 0xFFFD or 0x10000 <= codepoint <= 0x10FFFF
+    noncharacter = 0xFDD0 <= codepoint <= 0xFDEF or codepoint & 0xFFFF in {0xFFFE, 0xFFFF}
+    return in_xml_range and not noncharacter
+
+
 def _xml_escape(value: Any, *, quote: bool = True) -> str:
-    """Escape text for XML 1.0, dropping illegal control characters."""
+    """Escape text for XML 1.0, replacing illegal Unicode code points."""
 
     text = str(value)
-    cleaned = "".join(ch if ch in "\t\n\r" or ord(ch) >= 0x20 else "�" for ch in text)
+    cleaned = "".join(ch if _is_xml_10_character(ch) else "\ufffd" for ch in text)
     return escape(cleaned, quote=quote)
 
 
@@ -65,6 +75,18 @@ def render_markdown(report: dict[str, Any]) -> str:
             )
             + " |"
         )
+    manifest = report.get("evaluation_manifest")
+    if manifest:
+        lines.extend([
+            "",
+            "## Evaluation manifest",
+            "",
+            f"**SHA-256:** `{manifest.get('sha256', 'unknown')}`",
+            "",
+            "**Provenance:**",
+            "",
+        ])
+        lines.extend(f"    {line}" for line in json.dumps(manifest, indent=2, sort_keys=True).splitlines())
     lines.append("")
     return "\n".join(lines)
 
@@ -86,6 +108,23 @@ def render_junit(report: dict[str, Any]) -> str:
         f'<testsuites tests="{tests}" failures="{failures}">',
         f'  <testsuite name="agent-security-bench" tests="{tests}" failures="{failures}" benchmark_version="{benchmark_version}">',
     ]
+    manifest = report.get("evaluation_manifest")
+    if manifest:
+        manifest_schema = _xml_escape(manifest.get("schema_version", ""), quote=True)
+        manifest_path = _xml_escape(manifest.get("path", ""), quote=True)
+        manifest_hash = _xml_escape(manifest.get("sha256", ""), quote=True)
+        selected_inputs = _xml_escape(
+            json.dumps(manifest.get("selected_inputs", {}), sort_keys=True, separators=(",", ":")),
+            quote=True,
+        )
+        lines.extend([
+            "    <properties>",
+            f'      <property name="evaluation_manifest.schema_version" value="{manifest_schema}" />',
+            f'      <property name="evaluation_manifest.path" value="{manifest_path}" />',
+            f'      <property name="evaluation_manifest.sha256" value="{manifest_hash}" />',
+            f'      <property name="evaluation_manifest.selected_inputs" value="{selected_inputs}" />',
+            "    </properties>",
+        ])
     for result in report.get("results", []):
         case_id = _xml_escape(result.get("id", "unknown"), quote=True)
         classname = _xml_escape(result.get("category", "agent_security_bench"), quote=True)
@@ -139,19 +178,20 @@ def render_sarif(report: dict[str, Any]) -> dict[str, Any]:
                     "properties": item,
                 }
             )
+    run: dict[str, Any] = {
+        "tool": {
+            "driver": {
+                "name": "agent-security-bench",
+                "informationUri": "https://github.com/mattpartida/agent-security-bench",
+                "rules": rules,
+            }
+        },
+        "results": results,
+    }
+    if report.get("evaluation_manifest"):
+        run["properties"] = {"evaluation_manifest": report["evaluation_manifest"]}
     return {
         "$schema": "https://json.schemastore.org/sarif-schema-2.1.0.json",
         "version": "2.1.0",
-        "runs": [
-            {
-                "tool": {
-                    "driver": {
-                        "name": "agent-security-bench",
-                        "informationUri": "https://github.com/mattpartida/agent-security-bench",
-                        "rules": rules,
-                    }
-                },
-                "results": results,
-            }
-        ],
+        "runs": [run],
     }
