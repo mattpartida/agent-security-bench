@@ -16,8 +16,8 @@ from typing import Any
 from .adapters import adapter_names
 from .baselines import validate_baseline_suppressions
 from .cases import BENCHMARK_VERSION, built_in_cases, load_cases_bytes
-from .suites import filter_cases_by_suite
 from .strict_json import loads_strict_json
+from .suites import filter_cases_by_suite
 
 MANIFEST_SCHEMA_VERSION = "1.0"
 MAX_PINNED_FILE_BYTES = 16_777_216
