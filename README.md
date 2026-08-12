@@ -74,6 +74,8 @@ Supported report formats:
 ```bash
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format json
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format markdown
+PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format markdown-pr
+PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format ndjson
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format sarif
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json --format junit
 PYTHONPATH=src python -m agent_security_bench.cli score examples/unsafe-responses.json \
@@ -126,6 +128,10 @@ PYTHONPATH=src python -m agent_security_bench.cli run-manifest \
 ```
 
 External case files, mock transcripts, and suppression baselines carry SHA-256 pins. Paths resolve relative to the manifest, and every report records the manifest hash plus selected inputs under `evaluation_manifest`. Strict local, CI, and nightly examples live in `examples/manifests/`. See `docs/evaluation-manifests.md` for the schema, validation rules, and provenance contract.
+
+## Dashboard exports
+
+Export stable, content-minimized run and case metrics for trend storage with `--format ndjson`, or generate a concise failed-cases-only pull-request comment with `--format markdown-pr`. Both formats work with `score`, `run`, and `run-manifest`; JSON remains the default. The CLI does not upload, comment, or host anything. See `docs/dashboard-exports.md` for GitHub Actions artifact ingestion, static-site publishing, schema compatibility, and security boundaries.
 
 ## Tool-call transcript scoring
 
@@ -250,7 +256,7 @@ The original `0.2.0` benchmark roadmap is complete:
 - Larger prompt-injection corpus — Shipped
 - Regression mode for agent releases — Shipped
 
-The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy. Phase 6 is shipped in `0.8.0` with evidence bundle artifacts for failed response and transcript cases. Phase 7 is shipped in `0.9.0` with built-in scenario suites and `--suite` filtering. Phase 8 is shipped in `0.10.0` with severity-weighted scores and critical/high failure budgets. Phase 9 is shipped in `0.11.0` with content-pinned evaluation manifests and report provenance. Phase 10 plans dashboard exports.
+The next roadmap is tracked in `docs/roadmap.md`. Phase 1, the CI adoption pack, is shipped in `0.3.0` with JUnit XML, score thresholds, failure gates, and a GitHub Actions example. Phase 2 is shipped in `0.4.0` with auditable baseline suppressions and cleanup gates. Phase 3 is shipped in `0.5.0` with normalized dry-run/mock adapter transcripts and sandbox-gated external adapter specs. Phase 4 is shipped in `0.6.0` with corpus linting, coverage reporting, and case-review guidance. Phase 5 is shipped in `0.7.0` with packaging smoke tests, CI matrix coverage, a changelog, and report-schema policy. Phase 6 is shipped in `0.8.0` with evidence bundle artifacts for failed response and transcript cases. Phase 7 is shipped in `0.9.0` with built-in scenario suites and `--suite` filtering. Phase 8 is shipped in `0.10.0` with severity-weighted scores and critical/high failure budgets. Phase 9 is shipped in `0.11.0` with content-pinned evaluation manifests and report provenance. Phase 10 is shipped in `0.12.0` with NDJSON trend metrics and pull-request Markdown summaries.
 
 ## Safety note
 

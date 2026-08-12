@@ -238,8 +238,8 @@ class Phase8WeightedScoringTests(unittest.TestCase):
         self.assertIn("Migration", migration)
         self.assertIn("--min-score", migration)
         self.assertIn("--min-weighted-score", migration)
-        self.assertIn('version = "0.11.0"', pyproject)
-        self.assertIn('__version__ = "0.11.0"', package_init)
+        self.assertIn('version = "0.12.0"', pyproject)
+        self.assertIn('__version__ = "0.12.0"', package_init)
 
 
 if __name__ == "__main__":

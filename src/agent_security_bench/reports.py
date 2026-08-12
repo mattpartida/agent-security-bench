@@ -3,8 +3,118 @@
 from __future__ import annotations
 
 import json
+import re
 from html import escape
 from typing import Any
+
+EXPORT_SCHEMA_VERSION = "1.0"
+
+
+def _neutralize_mentions(value: Any) -> str:
+    return re.sub(r"@(everyone|here)\b", lambda match: "@\u200b" + match.group(1), str(value), flags=re.IGNORECASE)
+
+
+def _markdown_cell(value: Any) -> str:
+    text = escape(_neutralize_mentions(value), quote=False).replace("\r", " ").replace("\n", " ")
+    for character, entity in {
+        "\\": "&#92;",
+        "`": "&#96;",
+        "[": "&#91;",
+        "]": "&#93;",
+        "(": "&#40;",
+        ")": "&#41;",
+        "!": "&#33;",
+    }.items():
+        text = text.replace(character, entity)
+    return text.replace("|", "\\|")
+
+
+def render_dashboard_ndjson(report: dict[str, Any]) -> str:
+    """Render stable, content-minimized metrics for long-lived trend storage."""
+
+    run_record: dict[str, Any] = {
+        "record_type": "run",
+        "export_schema_version": EXPORT_SCHEMA_VERSION,
+        "report_schema_version": report.get("schema_version"),
+        "benchmark_version": report.get("benchmark_version"),
+        "summary": report.get("summary", {}),
+        "by_category": report.get("by_category", {}),
+        "by_difficulty": report.get("by_difficulty", {}),
+        "by_severity": report.get("by_severity", {}),
+    }
+    for key in ("suite", "adapter", "thresholds", "policy_outcome"):
+        if key in report:
+            run_record[key] = report[key]
+    if report.get("evaluation_manifest"):
+        manifest = report["evaluation_manifest"]
+        run_record["evaluation_manifest"] = {
+            key: manifest[key] for key in ("schema_version", "sha256") if key in manifest
+        }
+
+    records = [run_record]
+    for result in sorted(report.get("results", []), key=lambda item: str(item.get("id", ""))):
+        records.append({
+            "record_type": "case",
+            "export_schema_version": EXPORT_SCHEMA_VERSION,
+            "report_schema_version": report.get("schema_version"),
+            "benchmark_version": report.get("benchmark_version"),
+            "case_id": result.get("id"),
+            "category": result.get("category"),
+            "difficulty": result.get("difficulty"),
+            "severity": result.get("severity"),
+            "passed": bool(result.get("passed")),
+            "score": result.get("score"),
+            "severity_weight": result.get("severity_weight"),
+            "weighted_score_contribution": result.get("weighted_score_contribution"),
+            "violation_count": len(result.get("violations", [])),
+            "violation_types": sorted({str(item.get("type", "unknown")) for item in result.get("violations", [])}),
+            **({"suites": result["suites"]} if "suites" in result else {}),
+        })
+    return "".join(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n" for record in records)
+
+
+def render_pr_markdown(report: dict[str, Any]) -> str:
+    """Render a compact, safe-to-paste pull-request comment summary."""
+
+    summary = report.get("summary", {})
+    failed = [result for result in report.get("results", []) if not result.get("passed")]
+    policy_outcome = report.get("policy_outcome", {})
+    status = "❌ Failed" if failed or policy_outcome.get("failed") else "✅ Passed"
+    lines = [
+        "<!-- agent-security-bench:pr-summary -->",
+        "## Agent security benchmark",
+        "",
+        f"**{status}** · score `{summary.get('score', 0.0)}` · weighted `{summary.get('weighted_score', summary.get('score', 0.0))}` · "
+        f"{summary.get('passed', 0)}/{summary.get('total', 0)} cases passed",
+    ]
+    if report.get("thresholds"):
+        gate = "failed" if report["thresholds"].get("failed") else "passed"
+        lines.append(f"\n**Policy gates:** {gate}")
+    policy_reasons = policy_outcome.get("reasons", [])
+    if policy_reasons:
+        lines.append(f"\n**Failure reasons:** {', '.join(_markdown_cell(reason) for reason in policy_reasons)}")
+    if failed:
+        lines.extend([
+            "",
+            "<details>",
+            f"<summary>Failed cases ({len(failed)})</summary>",
+            "",
+            "| Case | Severity | Category | Violations |",
+            "| --- | --- | --- | --- |",
+        ])
+        for result in failed:
+            violations = ", ".join(
+                f"{item.get('type', 'violation')}:{item.get('pattern', '')}" for item in result.get("violations", [])
+            ) or "benchmark case failed"
+            lines.append(
+                f"| {_markdown_cell(result.get('id', 'unknown'))} | {_markdown_cell(result.get('severity', 'unknown'))} | "
+                f"{_markdown_cell(result.get('category', 'unknown'))} | {_markdown_cell(violations)} |"
+            )
+        lines.extend(["", "</details>"])
+    manifest = report.get("evaluation_manifest")
+    if manifest:
+        lines.extend(["", f"Manifest: `{_markdown_cell(manifest.get('sha256', 'unknown'))}`"])
+    return "\n".join(lines) + "\n"
 
 
 def _is_xml_10_character(character: str) -> bool:

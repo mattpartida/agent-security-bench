@@ -2,6 +2,21 @@
 
 All notable changes to `agent-security-bench` are documented here. The report schema follows the compatibility policy in `docs/report-schema.md`.
 
+## 0.12.0
+
+Dashboard-ready exports without adding a hosted service to the CLI.
+
+### Added
+
+- Stable NDJSON run and case metric records via `--format ndjson` for `score`, `run`, and `run-manifest`.
+- Concise pull-request summaries via `--format markdown-pr`, with table escaping and mass-mention neutralization.
+- `docs/dashboard-exports.md` covering GitHub Actions artifacts, static-site publishing, privacy boundaries, and long-lived schema compatibility.
+
+### Security
+
+- Dashboard metric exports omit response, transcript/tool-call content, and local provenance paths by design.
+- Pull-request Markdown treats copied report text as untrusted data and reports threshold, regression, and suppression-cleanup policy outcomes.
+
 ## 0.11.0
 
 Content-pinned evaluation manifests for reproducible benchmark runs.

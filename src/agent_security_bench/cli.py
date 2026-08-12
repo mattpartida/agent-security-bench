@@ -15,7 +15,7 @@ from .cases import built_in_cases, load_cases
 from .evidence import build_evidence_bundle
 from .governance import corpus_coverage_report, lint_cases
 from .manifests import load_evaluation_manifest
-from .reports import render_junit, render_markdown, render_sarif
+from .reports import render_dashboard_ndjson, render_junit, render_markdown, render_pr_markdown, render_sarif
 from .runner import compare_to_baseline, run_benchmark
 from .suites import attach_result_suites, case_to_dict_with_suites, filter_cases_by_suite, suite_names
 
@@ -43,6 +43,10 @@ def _failure_budget(value):
 
 
 def _render_report(report, fmt):
+    if fmt == "ndjson":
+        return render_dashboard_ndjson(report)
+    if fmt == "markdown-pr":
+        return render_pr_markdown(report)
     if fmt == "markdown":
         return render_markdown(report) + "\n"
     if fmt == "sarif":
@@ -96,6 +100,11 @@ def _apply_thresholds(
     return bool(threshold["failed"])
 
 
+def _attach_policy_outcome(report, **conditions):
+    reasons = [name for name, failed in conditions.items() if failed]
+    report["policy_outcome"] = {"failed": bool(reasons), "reasons": reasons}
+
+
 def _suite_error(path, exc):
     return _json({
         "schema_version": "0.2",
@@ -126,7 +135,7 @@ def run(argv=None):
     score_parser.add_argument("--cases", help="Optional JSON/JSONL/YAML case file")
     score_parser.add_argument("--suite", help="Optional built-in scenario suite filter")
     score_parser.add_argument("--transcripts", action="store_true", help="treat responses as case_id -> transcript objects")
-    score_parser.add_argument("--format", choices=["json", "markdown", "sarif", "junit"], default="json")
+    score_parser.add_argument("--format", choices=["json", "markdown", "markdown-pr", "ndjson", "sarif", "junit"], default="json")
     score_parser.add_argument("--baseline", help="Optional baseline report for regression comparison")
     score_parser.add_argument("--fail-on-regression", action="store_true", help="exit non-zero if current score regresses from baseline")
     score_parser.add_argument("--min-score", type=_score_threshold, help="exit non-zero if the benchmark score is below this value")
@@ -179,11 +188,11 @@ def run(argv=None):
     run_parser.add_argument("--sandbox", action="store_true", help="confirm adapter execution is sandboxed")
     run_parser.add_argument("--mock-transcripts", help="JSON fixture for the mock transcript adapter")
     run_parser.add_argument("--evidence-bundle", help="Write a JSON evidence bundle for failed transcript cases")
-    run_parser.add_argument("--format", choices=["json", "markdown", "sarif"], default="json")
+    run_parser.add_argument("--format", choices=["json", "markdown", "markdown-pr", "ndjson", "sarif"], default="json")
 
     manifest_parser = subparsers.add_parser("run-manifest", help="Run a content-pinned evaluation manifest")
     manifest_parser.add_argument("manifest", help="Path to an evaluation manifest JSON file")
-    manifest_parser.add_argument("--format", choices=["json", "markdown", "sarif", "junit"], default="json")
+    manifest_parser.add_argument("--format", choices=["json", "markdown", "markdown-pr", "ndjson", "sarif", "junit"], default="json")
 
     regression_parser = subparsers.add_parser("regression", help="Compare a current report against a baseline report")
     regression_parser.add_argument("current", help="Current report JSON")
@@ -269,6 +278,11 @@ def run(argv=None):
             max_high_failures=thresholds.get("max_high_failures"),
             fail_on_failures=thresholds.get("fail_on_failures", False),
         )
+        _attach_policy_outcome(
+            manifest_report,
+            threshold_failure=threshold_failed,
+            suppression_cleanup_failure=suppression_failed,
+        )
         manifest_report["evaluation_manifest"] = loaded.provenance
         return (1 if suppression_failed or threshold_failed else 0), _render_report(manifest_report, args.format)
 
@@ -338,6 +352,12 @@ def run(argv=None):
             max_critical_failures=args.max_critical_failures,
             max_high_failures=args.max_high_failures,
             fail_on_failures=args.fail_on_failures,
+        )
+        _attach_policy_outcome(
+            report,
+            threshold_failure=threshold_failed,
+            regression_failure=regression_failed,
+            suppression_cleanup_failure=baseline_suppression_failed,
         )
         if args.evidence_bundle:
             bundle = build_evidence_bundle(

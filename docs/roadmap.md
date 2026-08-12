@@ -127,13 +127,13 @@ Shipped acceptance criteria:
 
 ## Phase 10 — Hosted benchmark dashboards
 
-**Status:** Planned.
+**Status:** Shipped in `0.12.0`.
 
 Prepare outputs for trend dashboards without requiring a hosted service in the CLI.
 
-Planned scope:
+Shipped acceptance criteria:
 
-- Stable NDJSON export for per-run and per-case metrics.
-- Optional Markdown summary optimized for pull-request comments.
+- Stable `--format ndjson` export for per-run and per-case metrics without response or transcript content.
+- Optional `--format markdown-pr` summary optimized for safe pull-request comments.
 - Dashboard ingestion docs for GitHub Actions artifacts and static-site publishing.
-- Backward-compatible schema notes for long-lived trend storage.
+- Versioned, backward-compatible export schema notes for long-lived trend storage.

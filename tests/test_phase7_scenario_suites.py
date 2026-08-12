@@ -92,8 +92,8 @@ class Phase7ScenarioSuiteTests(unittest.TestCase):
         self.assertIn("Phase 8 — Weighted scoring and severity budgets", roadmap)
         self.assertIn("scenario suites", readme.lower())
         self.assertIn("## 0.9.0", changelog)
-        self.assertIn('version = "0.11.0"', pyproject)
-        self.assertIn('__version__ = "0.11.0"', package_init)
+        self.assertIn('version = "0.12.0"', pyproject)
+        self.assertIn('__version__ = "0.12.0"', package_init)
 
 
 if __name__ == "__main__":

@@ -437,8 +437,8 @@ class Phase9EvaluationManifestTests(unittest.TestCase):
         self.assertIn("relative to the manifest", docs)
         self.assertIn("evaluation_manifest", report_schema)
         self.assertIn("run-manifest --format json", report_schema)
-        self.assertIn('version = "0.11.0"', pyproject)
-        self.assertIn('__version__ = "0.11.0"', package_init)
+        self.assertIn('version = "0.12.0"', pyproject)
+        self.assertIn('__version__ = "0.12.0"', package_init)
         for name in ("local.json", "ci.json", "nightly.json"):
             manifest_path = ROOT / "examples" / "manifests" / name
             payload = json.loads(manifest_path.read_text(encoding="utf-8"))

@@ -14,6 +14,7 @@ Common report fields include:
 - `suppressed_findings`, `suppressed_summary`, and `baseline_suppression_summary`: optional baseline-suppression audit metadata.
 - `adapter`: optional live-adapter metadata for `run` outputs.
 - `evaluation_manifest`: optional manifest SHA-256 and selected-input provenance for `run-manifest` outputs.
+- `policy_outcome`: additive composed threshold, regression, and suppression-cleanup outcome for score and manifest reports.
 
 Per-case results include stable case metadata (`id`, `category`, `title`, `severity`, `difficulty`, `tags`) plus scoring fields (`passed`, `score`, `violations`, `missing_required_patterns`). Additive Phase 8 fields expose `severity_weight` and `weighted_score_contribution`. Transcript-mode results may include `transcript_metadata`.
 
@@ -41,4 +42,6 @@ Machine-readable commands currently emit JSON with `schema_version` by default:
 - `run-manifest --format json`
 - `regression`
 
-Human-readable or integration formats (`markdown`, `junit`, `sarif`) are opt-in and may encode the same findings using format-specific conventions.
+Human-readable or integration formats (`markdown`, `markdown-pr`, `ndjson`, `junit`, `sarif`) are opt-in and may encode the same findings using format-specific conventions.
+
+Dashboard NDJSON records use a separate `export_schema_version` because they are a content-minimized projection rather than the complete report. The current export schema is `1.0`: additive fields are backward-compatible within major version `1`, consumers should ignore unknown fields, and incompatible removals or meaning/type changes require a new export-schema major version. See `dashboard-exports.md`.
